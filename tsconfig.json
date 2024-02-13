@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "types": [
+      "jest"
+    ],
+    "module": "commonjs",
+    "target": "es2017",
+    "declaration": true,
+    "outDir": "dist/",
+    /* Linting */
+    "strict": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist/**/*"
+  ]
+}
