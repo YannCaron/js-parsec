@@ -1,8 +1,8 @@
 # js-parsec 
 
-**Js-Parsec** is another **LL(*) Packrat** parser written in TypeScript.
+**Js-Parsec** is another **LL(1) soon a LL(*)** parser written in TypeScript.
 
-Why another LL Parser ? Because **Js-Parsec** embrase great emphasis to define as **simple** and **clean** grammar definition as possible.
+Why another Parser in Js/Ts ? Because **Js-Parsec** embrase great emphasis to define as **simple** and **clean** grammar definition as possible.
 
 Rather than *classical* parsers that definition is frequently based on **BNF** familly languages, **Js-Parsec** is based on a **Combinator Framework** approach.
 
