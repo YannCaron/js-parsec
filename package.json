@@ -4,6 +4,10 @@
   "description": "A js/ts LL(*) parsing library based on combinator framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YannCaron/js-parsec"
+  },
   "scripts": {
     "build": "rm -r -f ./dist && tsc",
     "test": "jest --watchAll --coverage",
