@@ -19,76 +19,71 @@ Install it from NPM: `npm install --save @cyann/js-parsec`
 ## Arithmetic example
 
 Here is a complete example of arithmetic calculator:
-``` javascript
-# index.js
+``` js
+const { Context, expression, repeat, charInInterval, choice, sequence, wordIs, optional } = require('@cyann/js-parsec')
 
-import 'js-parsec'
-
-// circular reference made possible (use with cautions!)
+// circular reference made possible (use with caution!)
 const A = expression()
 
 // I = [0-9]+
 const I =
-  repeat(
-    charInInterval('0', '9')).productT(v => parseInt(v))
+    repeat(
+        charInInterval('0', '9')).productT(v => parseInt(v))
 
 // E = '(' A ')' | I
 const E =
-  choice(
-    sequence(
-      wordIs('('),
-      A,
-      wordIs(')')),
-    I)
+    choice(
+        sequence(
+            wordIs('('),
+            A,
+            wordIs(')')),
+        I)
 
 // MM = '*' E
 const MM =
-  sequence(
-    wordIs('*'),
-    E.productNT((l, r) => l * r))
+    sequence(
+        wordIs('*'),
+        E.productNT((l, r) => l * r))
 
 // MR =  '/' E
 const MR =
-  sequence(
-    wordIs('/'),
-    E.productNT((l, r) => l / r))
+    sequence(
+        wordIs('/'),
+        E.productNT((l, r) => l / r))
 
 // M = E (MM | MR)*
 const M =
-  sequence(
-    E,
-    repeat(
-      optional(
-        choice(
-          MM, MR))))
+    sequence(
+        E,
+        repeat(
+            optional(
+                choice(
+                    MM, MR))))
 
 // AA = '+' M
 const AA =
-  sequence(
-    wordIs('+'),
-    M.productNT((l, r) => l + r))
+    sequence(
+        wordIs('+'),
+        M.productNT((l, r) => l + r))
 
 // AM = '-' M
 const AM =
-  sequence(
-    wordIs('-'),
-    M.productNT((l, r) => l - r))
+    sequence(
+        wordIs('-'),
+        M.productNT((l, r) => l - r))
 
 // A = M (AA | AM)*
 A.ref =
-  sequence(
-    M,
-    repeat(
-      optional(
-        choice(
-          AA, AM))))
+    sequence(
+        M,
+        repeat(
+            optional(
+                choice(
+                    AA, AM))))
 
-// execution part
-
-A.parse('')
+// now use it!
+const ctx = new Context('(2+3)*4')
+A.parse(ctx)
+console.log('result:', ctx.result); // result: 20
 ```
 That's it, no need to define and maintain some definition files outside of the project and in different languages, everything is embeded, typed and compiled :relaxed:.
-
-## Resources
-
--[ts-migration](https://www.tsmean.com/articles/how-to-write-a-typescript-library/)
