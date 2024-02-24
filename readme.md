@@ -127,3 +127,4 @@ A.ref = sequence(A, wordIs('+'), A)
 - [ ] Test with CFG languages
 - [X] Write limitations
 - [X] Add **grammar-lab** screenshot
+- [ ] Pass TS compilator to full strict mode
