@@ -7,7 +7,6 @@
     "target": "es2017",
     "declaration": true,
     "outDir": "dist/",
-    "rootDir": "src/",
     /* Linting */
     "strict": false,
     "noUnusedLocals": true,
