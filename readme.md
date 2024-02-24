@@ -114,17 +114,3 @@ const A = expression()
 A.ref = sequence(A, wordIs('+'), A)
 // will lead to infinite recursion
 ```
-
-
-### Todo
-
-- [ ] Improve parser to LL(*) with memoizer (Packrat), not just backtracking on **choices**
-- [ ] Fix Jest to ignore dist folder (more complex than it could be!)
-- [ ] Migrate this list to github issues :wink:
-- [ ] Unit test **grammar-lab** generation with readme example
-- [ ] Add examples to git repo
-- [ ] Add wiki pages
-- [ ] Test with CFG languages
-- [X] Write limitations
-- [X] Add **grammar-lab** screenshot
-- [ ] Pass TS compilator to full strict mode
