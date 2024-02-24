@@ -15,6 +15,8 @@ That is the essence of Js-Parsec to be an **Embeded DSL**.
 Install it from NPM: `npm install --save @cyann/js-parsec`
 
 > :golf: Practice it with: [grammar-lab](http://grammar.kids-lab.io). Execute living examples, **copy / past** it to your project and enjoy :relaxed:.
+> [![grammar-lab](/res/img/grammar-lab.png?raw=true "grammar-lab")](http://grammar.kids-lab.io)
+
 
 ## Arithmetic example
 
@@ -87,3 +89,29 @@ A.parse(ctx)
 console.log('result:', ctx.result); // result: 20
 ```
 That's it, no need to define and maintain some definition files outside of the project and in different languages, everything is embeded, typed and compiled :relaxed:.
+
+## What's next
+
+### Limitations
+
+**js-parsec** is based on a **Left to right, left most derivation**, it means that left recursion lead to infinite recursion.
+
+Avoid the left recursions e.g.:
+```js
+const A = expression()
+
+A.ref = sequence(A, wordIs('+'), A)
+// will lead to infinite recursion
+```
+
+
+### Todo
+
+- [ ] Extends parser to LL(*) with memoizer, not just backtracking on **choices**
+- [ ] Fix Jest to ignore dist folder
+- [ ] Unit test **grammar-lab** generation with previous example
+- [ ] Add examples to git repo
+- [ ] Add wiki pages
+- [ ] Test with CFG languages
+- [X] Write limitations
+- [ ] Add **grammar-lab** screenshot
