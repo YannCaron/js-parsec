@@ -18,7 +18,7 @@ Install it from NPM: `npm install --save @cyann/js-parsec`
 >
 > the **grammar-lab** front-end:
 > [![grammar-lab](/res/img/grammar-lab.png?raw=true "grammar-lab")](http://grammar.kids-lab.io)
-> grammar-lab allow you:
+> grammar-lab allow you to:
 > - [X] - write your own BNF grammar
 > - [X] - represent it in **rail-road diagram** style
 > - [X] - build your **Js-Parsec** script
@@ -118,11 +118,12 @@ A.ref = sequence(A, wordIs('+'), A)
 
 ### Todo
 
-- [ ] Extends parser to LL(*) with memoizer, not just backtracking on **choices**
-- [ ] Fix Jest to ignore dist folder
-- [ ] Unit test **grammar-lab** generation with previous example
+- [ ] Improve parser to LL(*) with memoizer (Packrat), not just backtracking on **choices**
+- [ ] Fix Jest to ignore dist folder (more complex than it could be!)
+- [ ] Migrate this list to github issues :wink:
+- [ ] Unit test **grammar-lab** generation with readme example
 - [ ] Add examples to git repo
 - [ ] Add wiki pages
 - [ ] Test with CFG languages
 - [X] Write limitations
-- [ ] Add **grammar-lab** screenshot
+- [X] Add **grammar-lab** screenshot
