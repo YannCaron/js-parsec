@@ -9,9 +9,10 @@
     "url": "https://github.com/YannCaron/js-parsec"
   },
   "scripts": {
-    "build": "rm -r -f ./dist && tsc",
+    "build": "tsc",
     "test": "jest --watchAll --coverage",
-    "doc": "jsdoc --readme ./readme.md --destination ./doc ./"
+    "doc": "jsdoc --readme ./readme.md --destination ./doc ./",
+    "publish": "npm publish --access public"
   },
   "keywords": [
     "Lexer",
