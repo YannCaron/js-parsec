@@ -1,6 +1,6 @@
 import Context from "./runtime/Context"
 import { Parsem } from "./Parsem"
-import Result from "./runtime/Result"
+import { Result } from "./runtime/Result"
 
 class Null<T> extends Parsem<T> {
     parse(_: Context<T>): Result {

@@ -1,5 +1,5 @@
 import { Functions, Stack, StringBuilder } from '@cyann/js-commons'
-import Result from './Result'
+import { Result } from './Result'
 import Token from './Token'
 import { TokenType } from './TokenType'
 

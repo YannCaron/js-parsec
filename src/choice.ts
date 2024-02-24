@@ -1,7 +1,6 @@
 import Context from "./runtime/Context"
 import { Parsem, ParsemComposite } from "./Parsem"
-import Result from "./runtime/Result"
-
+import { Result } from "./runtime/Result"
 
 class Choice<T> extends ParsemComposite<T> {
 

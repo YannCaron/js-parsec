@@ -5,7 +5,7 @@ import {
 } from './src/Parsem'
 
 import Context from './src/runtime/Context'
-import Result from './src/runtime/Result'
+import { Result } from './src/runtime/Result'
 import Token from './src/runtime/Token'
 import {
     TokenType,

@@ -1,6 +1,6 @@
 import { Parsem, ParsemDecorator } from "./Parsem"
 import Context from "./runtime/Context"
-import Result from "./runtime/Result"
+import { Result } from "./runtime/Result"
 
 class Repeat<T> extends ParsemDecorator<T> {
 

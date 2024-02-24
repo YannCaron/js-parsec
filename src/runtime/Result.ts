@@ -1,7 +1,5 @@
-const enum Result {
+export enum Result {
     NotParsed = 'not parsed',
     Parsed = 'parsed',
     Continue = 'continue'
 }
-
-export default Result

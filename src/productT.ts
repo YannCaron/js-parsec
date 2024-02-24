@@ -2,7 +2,7 @@ import Context from "./runtime/Context"
 import { Parsem, ParsemDecorator } from "./Parsem"
 import { TokenType } from "./runtime/TokenType"
 import Token from "./runtime/Token"
-import Result from "./runtime/Result"
+import { Result } from "./runtime/Result"
 
 class ProductT<T> extends ParsemDecorator<T> {
 

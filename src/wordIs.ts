@@ -1,6 +1,6 @@
 import Context from "./runtime/Context"
 import { Parsem } from "./Parsem"
-import Result from "./runtime/Result"
+import { Result } from "./runtime/Result"
 
 class WordIs<T> extends Parsem<T> {
 

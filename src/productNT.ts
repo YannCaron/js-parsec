@@ -1,6 +1,6 @@
 import Context from "./runtime/Context"
 import { Parsem, ParsemDecorator } from "./Parsem"
-import Result from "./runtime/Result"
+import { Result } from "./runtime/Result"
 
 class ProductNT<T> extends ParsemDecorator<T> {
 
