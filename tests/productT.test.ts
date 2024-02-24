@@ -7,6 +7,7 @@ import { productT } from "../src/productT";
 import Result from "../src/runtime/Result";
 import Token from "../src/runtime/Token";
 import { TokenType } from "../src/runtime/TokenType";
+import '../src/choice'
 
 describe('basic productT', () => {
 

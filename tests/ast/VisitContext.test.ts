@@ -6,6 +6,7 @@ import Context from "../../src/runtime/Context"
 import choice from "../../src/choice"
 import wordIs from "../../src/wordIs"
 import { TokenType } from "../../src/runtime/TokenType"
+import '../../src/productT'
 
 const n3 = new AstTerm('number', '5')
 const n2 = new AstTerm('number', '2')

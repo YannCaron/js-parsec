@@ -4,6 +4,7 @@ import choice from "../src/choice";
 import optional from "../src/optional";
 import sequence from "../src/sequence";
 import Result from "../src/runtime/Result";
+import '../src/repeat'
 
 describe('basic choice/char', () => {
 

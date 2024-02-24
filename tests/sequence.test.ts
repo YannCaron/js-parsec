@@ -3,6 +3,7 @@ import optional from "../src/optional";
 import Context from "../src/runtime/Context";
 import Result from "../src/runtime/Result";
 import sequence from "../src/sequence";
+import '../src/repeat'
 
 describe('basic sequence/char', () => {
 

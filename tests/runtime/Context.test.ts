@@ -4,6 +4,7 @@ import optional from "../../src/optional"
 import repeat from "../../src/repeat"
 import sequence from "../../src/sequence"
 import Result from "../../src/runtime/Result"
+import '../../src/productT'
 
 describe('basic Context', () => {
 
