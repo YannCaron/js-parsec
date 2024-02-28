@@ -101,10 +101,43 @@ That's it, no need to define and maintain some definition files outside of the p
 
 **js-parsec** is based on a **Left to right, left most derivation**, it means that left recursion lead to infinite recursion.
 
-Avoid the left recursions e.g.:
+Avoid the left recursions **e.g.**:
 ```js
 const A = expression()
+const M = expression()
 
-A.ref = sequence(A, wordIs('+'), A)
+// I = [0-9]+
+const I = repeat(charInInterval('0', '9'))
+
+// M = M '*' M | I
+M.ref = sequence(M, wordIs('*'), M).or(I)
+
+// A = A '+' A | M
+A.ref = sequence(A, wordIs('+'), A).or(M)
 // will lead to infinite recursion
+```
+
+To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
+> Use the replacement formula founded [here](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated):
+> $$A \rightarrow A\alpha | \beta \implies \begin{matrix*}[l] A \rightarrow \beta A' \\ A' \rightarrow \alpha A' | \epsilon
+\end{matrix*}
+$$
+
+```js
+const A = expression()
+const M = expression()
+
+// I = [0-9]+
+const I = repeat(charInInterval('0', '9'))
+
+// M = I ('*' M)?
+M.ref = sequence(
+    I, 
+    optional(sequence(wordIs('*'), M)))
+
+// A = M ('+' A)?
+A.ref = sequence(
+    M, 
+    optional(sequence(wordIs('+'), A)))
+// will works!
 ```
