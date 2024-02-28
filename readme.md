@@ -119,12 +119,9 @@ A.ref = sequence(A, wordIs('+'), A).or(M)
 
 To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
 > :bulb: Use the replacement formula founded [here](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated):
-$$
-A \rightarrow A\alpha | \beta \implies
-\begin{aligned}
-A \rightarrow \beta A' \\ 
+> $$A \rightarrow A\alpha | \beta \implies
+A \rightarrow \beta A' \\
 A' \rightarrow \alpha A' | \epsilon
-\end{aligned}
 $$
 
 As well:
