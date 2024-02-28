@@ -68,10 +68,7 @@ const MR =
 const M =
     sequence(
         E,
-        repeat(
-            optional(
-                choice(
-                    MM, MR))))
+        repeat(optional(choice(MM, MR))))
 
 // AA = '+' M
 const AA =
@@ -89,10 +86,7 @@ const AM =
 A.ref =
     sequence(
         M,
-        repeat(
-            optional(
-                choice(
-                    AA, AM))))
+        repeat(optional(choice(AA, AM))))
 
 // now use it!
 const ctx = new Context('(2+3)*4')
