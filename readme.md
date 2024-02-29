@@ -95,11 +95,43 @@ console.log('result:', ctx.result); // result: 20
 ```
 That's it, no need to define and maintain some definition files outside of the project and in different languages, everything is embeded, typed and compiled :relaxed:.
 
-## What's next
+## Code flavors
 
-### Limitations
+### Abstract
 
-**js-parsec** is based on a **Left to right, left most derivation**, it means that left recursion lead to infinite recursion.
+Man can choose to configure the parser in two different flavors:
+- By using factory functions:
+e.g.: 
+```js
+// A '.' B
+sequence(A, wordIs('.'), B)
+```
+- By using fluent way:
+e.g.:
+```js
+// A '.' B
+A.then(wordIs('.')).then(B)
+```
+> :warning: With fluent flavour, be carefull with order of operations.
+
+### Correspondances
+
+Every factory has is corresponding fluent function:
+
+Factory | Fluent function
+:- | :-
+sequence(exp1, exp2) | exp1.then(exp2)
+choice(exp1, exp2) | exp1.or(exp2)
+optional(exp) | exp.optional()
+repeat(exp) | exp.repeat()
+productT(exp, lambda) | exp.productT(lambda)
+productNT(exp, lambda) | exp.productNT(lambda)
+
+## Limitations
+
+### Left recursion
+
+:warning: **js-parsec** is based on a **Left to right, left most derivation**, it means that left recursion lead to infinite recursion.
 
 Avoid the left recursions **e.g.**:
 ```js
@@ -119,9 +151,12 @@ A.ref = sequence(A, wordIs('+'), A).or(M)
 
 To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
 > :bulb: Use the replacement formula founded [here](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated):
-> $$A \rightarrow A\alpha | \beta \implies
-A \rightarrow \beta A' \\
-A' \rightarrow \alpha A' | \epsilon
+> $$
+\begin{align}
+A \rightarrow A\alpha | \beta \implies
+&A \rightarrow \beta A' \\
+&A' \rightarrow \alpha A' | \epsilon
+\end{align}
 $$
 
 As well:
