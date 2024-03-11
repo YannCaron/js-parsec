@@ -152,13 +152,7 @@ A.ref = sequence(A, wordIs('+'), A).or(M)
 To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
 > :bulb: Use the replacement formula founded [here](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated):
 >
-> $$
-\begin{align}
-A \rightarrow A\alpha | \beta \implies
-&A \rightarrow \beta A' \\
-&A' \rightarrow \alpha A' | \epsilon
-\end{align}
-$$
+> [![grammar-lab](/res/img/left-recur-formula.png?raw=true "left resursion formula")](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated)
 
 As well:
 ```js
