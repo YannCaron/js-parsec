@@ -150,9 +150,9 @@ A.ref = sequence(A, wordIs('+'), A).or(M)
 ```
 
 To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
-> :bulb: Use the replacement formula founded [here](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated):
+> :bulb: Use the following replacement:
 >
-> [![grammar-lab](/res/img/left-recur-formula.png?raw=true "left resursion formula")](https://www.tutorialspoint.com/what-is-left-recursion-and-how-it-is-eliminated)
+> ![grammar-lab](/res/img/left-recur-formula.png?raw=true "left resursion formula")
 
 As well:
 ```js
