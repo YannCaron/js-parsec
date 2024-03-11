@@ -112,7 +112,7 @@ e.g.:
 // A '.' B
 A.then(wordIs('.')).then(B)
 ```
-> :warning: With fluent flavour, be carefull with order of operations.
+> :warning: With fluent flavour, because all fluent method will encapsupate previous one as child expression, pay attention to order of operations.
 
 ### Correspondances
 
