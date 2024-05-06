@@ -2,7 +2,7 @@ import charIn from "../src/charIn";
 import optional from "../src/optional";
 import repeat from "../src/repeat";
 import Context from "../src/runtime/Context";
-import Result from "../src/runtime/Result";
+import { Result } from "../src/runtime/Result";
 import sequence from "../src/sequence";
 
 describe('basic repeat', () => {

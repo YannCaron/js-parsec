@@ -1,6 +1,6 @@
 import charIn from "../src/charIn"
 import Context from "../src/runtime/Context"
-import Result from "../src/runtime/Result"
+import { Result } from "../src/runtime/Result"
 
 describe('basic charIn', () => {
 

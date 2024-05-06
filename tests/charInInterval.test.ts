@@ -1,6 +1,6 @@
 import Context from "../src/runtime/Context"
 import charInInterval from "../src/charInInterval"
-import Result from "../src/runtime/Result"
+import { Result } from "../src/runtime/Result"
 
 describe('basic charInInterval', () => {
 
