@@ -7,13 +7,16 @@ class Repeat<T> extends ParsemDecorator<T> {
     parse(ctx: Context<T>): Result {
 
         let res = Result.NotParsed
+        let hasNext = ctx.current != null
         let parsedRes = this.decorated.parse(ctx)
         const startPos = ctx.pos
 
-        while (parsedRes === Result.Parsed) {
+        while (parsedRes === Result.Parsed && hasNext) {
             res = Result.Parsed
             parsedRes = this.decorated.parse(ctx)
-            
+
+            hasNext = ctx.current != null
+
             if (parsedRes === Result.Parsed && ctx.pos === startPos)
                 throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
         }
