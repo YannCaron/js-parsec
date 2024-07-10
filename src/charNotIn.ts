@@ -2,7 +2,7 @@ import Context from "./runtime/Context"
 import { Parsem } from "./Parsem"
 import { Result } from "./runtime/Result"
 
-class CharNonIn<T> extends Parsem<T> {
+class CharNotIn<T> extends Parsem<T> {
 
     private _chars: string
 
@@ -27,5 +27,5 @@ class CharNonIn<T> extends Parsem<T> {
 }
 
 export default function charNotIn<T>(chars: string) {
-    return new CharNonIn<T>(chars)
+    return new CharNotIn<T>(chars)
 }
