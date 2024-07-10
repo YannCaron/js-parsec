@@ -12,6 +12,8 @@ class WordIs<T> extends Parsem<T> {
     }
 
     parse(ctx: Context<T>): Result {
+        if (this._str === '') return Result.Continue
+
         return Context.handleBackup(ctx, ctx => {
             for (const chr of this._str) {
                 if (!ctx.current || chr !== ctx.current)
