@@ -9,7 +9,7 @@ describe('basic charNotIn', () => {
 
     const parser = charNotIn("ab")
 
-    test('charNotIn should charNotIn parse "a"', () => {
+    test('charNotIn should not parse "a"', () => {
         const ctx = new Context("a")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
     })
