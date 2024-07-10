@@ -27,5 +27,12 @@ describe('basic wordIs', () => {
     test('wordIs to string', () => {
         expect(parser.toString()).toBe(`("hi" [ ] "world")`)
     })
+    
+    test('wordIs should not parse ""', () => {
+        const p = wordIs("")
+        const ctx = new Context("")
+
+        expect(p.parse(ctx)).toBe(Result.Continue);
+    })
 
 })
