@@ -70,12 +70,12 @@ describe('combination repeat/sequence', () => {
         const ctx = new Context("a")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
     })
-    
+
     test('repeat should Not parse "ab"', () => {
         const ctx = new Context("ab")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
     })
-     
+
     test('repeat should not parse "aa"', () => {
         const ctx = new Context("aa")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
@@ -101,12 +101,12 @@ describe('combination repeat/sequence/optioanl', () => {
         const ctx = new Context("a")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
     })
-    
+
     test('repeat should Not parse "ab"', () => {
         const ctx = new Context("ab")
         expect(parser.parse(ctx)).toBe(Result.NotParsed);
     })
-     
+
     test('repeat should parse "aa"', () => {
         const ctx = new Context("aa")
         expect(parser.parse(ctx)).toBe(Result.Parsed);
