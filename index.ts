@@ -16,6 +16,7 @@ import charIn from './src/charIn'
 import charNotIn from './src/charNotIn'
 import charInInterval from './src/charInInterval'
 import wordIs from './src/wordIs'
+import wordNotIn from './src/wordNotIn'
 import repeat from './src/repeat'
 import optional from './src/optional'
 import sequence from './src/sequence'
@@ -56,6 +57,7 @@ export {
     charNotIn,
     charInInterval,
     wordIs,
+    wordNotIn,
     repeat,
     optional,
     sequence,
