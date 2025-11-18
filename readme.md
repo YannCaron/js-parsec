@@ -14,7 +14,7 @@ That is the essence of Js-Parsec to be an **Embeded DSL**.
 
 Install it from NPM: `npm install --save @cyann/js-parsec`
 
-> :golf: Practice it with: [grammar-lab](http://grammar.kids-lab.io). Inspire you from the living examples, build your own BNF grammar, **copy / past** from **Js-Parsec** tab to your project and enjoy it :relaxed:!
+> :golf: Practice it with: [grammar-lab](https://grammar.labs.cclaude.rocks/). Inspire you from the living examples, build your own BNF grammar, **copy / past** from **Js-Parsec** tab to your project and enjoy it :relaxed:!
 >
 > the **grammar-lab** front-end:
 > [![grammar-lab](/res/img/grammar-lab.png?raw=true "grammar-lab")](http://grammar.kids-lab.io)
