@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "tsc & jest --watchAll --coverage",
+    "test": "tsc && jest --coverage",
     "doc": "jsdoc --readme ./readme.md --destination ./doc ./",
     "publish": "npm publish --access public"
   },
