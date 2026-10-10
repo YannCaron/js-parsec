@@ -11,7 +11,7 @@ class Optional<T> extends ParsemDecorator<T> {
         if (res === Result.NotParsed)
             return Result.Continue
 
-        return Result.Parsed
+        return res
 
     }
 
