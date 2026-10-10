@@ -6,28 +6,31 @@ class Repeat<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        let res = Result.NotParsed
-        let hasNext = ctx.current != null
-        let parsedRes = this.decorated.parse(ctx)
-        const startPos = ctx.pos
+        return Context.handleBackup(ctx, ctx => {
+            let res = Result.NotParsed
+            let hasNext = ctx.current != null
+            let parsedRes = this.decorated.parse(ctx)
 
-        while (parsedRes === Result.Parsed && hasNext) {
-            res = Result.Parsed
-            parsedRes = this.decorated.parse(ctx)
+            while (parsedRes === Result.Parsed && hasNext) {
+                const startPos = ctx.pos
+                res = Result.Parsed
+                parsedRes = this.decorated.parse(ctx)
 
-            hasNext = ctx.current != null
+                hasNext = ctx.current != null
 
-            if (parsedRes === Result.Parsed && ctx.pos === startPos)
-                throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
-        }
+                if (parsedRes === Result.Parsed && ctx.pos === startPos)
+                    throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
+            }
 
-        if (res === Result.NotParsed && parsedRes === Result.Continue)
-            res = Result.Continue
+            if (res === Result.NotParsed && parsedRes === Result.Continue)
+                res = Result.Continue
 
-        return res
+            return res
+        })
+
 
     }
-        
+
     toString(): string {
         return `${this.decorated.toString()}+`
     }
@@ -44,6 +47,6 @@ declare module "./Parsem" {
     }
 }
 
-Parsem.prototype.repeat = function<T> () {
+Parsem.prototype.repeat = function <T>() {
     return repeat<T>(this)
 }
