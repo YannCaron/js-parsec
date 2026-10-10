@@ -1,7 +1,7 @@
 export default abstract class Visitor {
 
-    public static AUTO_TRAVERS_PROPERTY_NAME = 'AUTO_TRAVERS'
-    public static AUTO_TRAVERS = false
+    public static readonly AUTO_TRAVERS_PROPERTY_NAME:string = 'AUTO_TRAVERS' as const
+    public static readonly AUTO_TRAVERS?:boolean = false
 
     /* istanbul ignore next */
     protected constructor() { }

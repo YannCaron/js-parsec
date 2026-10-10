@@ -8,7 +8,7 @@
     "declaration": true,
     "outDir": "dist/",
     /* Linting */
-    "strict": false,
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
@@ -19,7 +19,7 @@
   ],
   "exclude": [
     "node_modules",
-    "test/**/*",
+    "tests/**/*",
     "dist/**/*"
   ]
 }

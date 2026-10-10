@@ -1,5 +1,5 @@
 import "@cyann/js-commons"
-import VisitContext from "./VisiteContext";
+import VisitContext from "./VisitContext";
 import Visitor from "./Visitor";
 
 export default abstract class Ast {
@@ -19,9 +19,10 @@ export default abstract class Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if (!visitor[this._functionName])
+        const visit = (visitor as Record<string, any>)[this._functionName]
+        if (!visit)
             throw new Error(`Visitor '${visitor}' does not contain '${this._functionName}' static method!`)
-        visitor[this._functionName](this, ctx)
+        visit.call(visitor, this, ctx)
     }
 
     abstract toString(): string

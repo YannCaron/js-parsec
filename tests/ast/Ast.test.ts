@@ -4,7 +4,7 @@ import AstNode from "../../src/ast/AstNode"
 import AstTerm from "../../src/ast/AstTerm"
 import AstTernary from "../../src/ast/AstTernary"
 import AstUnary from "../../src/ast/AstUnary"
-import StackVisitContext from "../../src/ast/StackVisiteContext"
+import StackVisitContext from "../../src/ast/StackVisitContext"
 import Visitor from "../../src/ast/Visitor"
 
 const t34 = new AstTerm('t', '34')

@@ -1,5 +1,5 @@
 import Ast from "./Ast";
-import VisitContext from "./VisiteContext";
+import VisitContext from "./VisitContext";
 import Visitor from "./Visitor";
 
 export default class AstTernary extends Ast {
@@ -28,7 +28,7 @@ export default class AstTernary extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if (visitor[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
+        if ((visitor as any)[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
             this._operand1.accept(visitor, ctx)
             this._operand2.accept(visitor, ctx)
             this._operand3.accept(visitor, ctx)

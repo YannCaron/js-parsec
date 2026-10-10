@@ -1,6 +1,6 @@
 import AstBinary from "../../src/ast/AstBinary"
 import AstTerm from "../../src/ast/AstTerm"
-import StackVisitContext from "../../src/ast/StackVisiteContext"
+import StackVisitContext from "../../src/ast/StackVisitContext"
 import Visitor from "../../src/ast/Visitor"
 import Context from "../../src/runtime/Context"
 import choice from "../../src/choice"
@@ -19,14 +19,14 @@ class MyVisitor extends Visitor {
     static AUTO_TRAVERS = true
 
     static visitAdd(_: AstBinary, ctx: StackVisitContext<number>) {
-        const right = ctx.pop()
-        const left = ctx.pop()
+        const right = ctx.pop()!
+        const left = ctx.pop()!
         ctx.push(left + right)
     }
 
     static visitMult(_: AstBinary, ctx: StackVisitContext<number>) {
-        const right = ctx.pop()
-        const left = ctx.pop()
+        const right = ctx.pop()!
+        const left = ctx.pop()!
         ctx.push(left * right)
     }
 

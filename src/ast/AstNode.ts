@@ -1,5 +1,5 @@
 import Ast from "./Ast";
-import VisitContext from "./VisiteContext";
+import VisitContext from "./VisitContext";
 import Visitor from "./Visitor";
 
 export default class AstNode extends Ast {
@@ -16,7 +16,7 @@ export default class AstNode extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if (visitor[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
+        if ((visitor as any)[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
             for (const child of this._children) {
                 child.accept(visitor, ctx)
             }
@@ -25,7 +25,7 @@ export default class AstNode extends Ast {
     }
 
     toString(): string {
-        const fn = (acc, h) => acc ? `${acc}, ${h}` : h
+        const fn = (acc: any, h: any) => acc ? `${acc}, ${h}` : h
         return `${this.type}(${this._children.reduce(fn, '')})`
     }
 

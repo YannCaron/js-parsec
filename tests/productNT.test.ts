@@ -134,13 +134,13 @@ describe('operator level grammar productNT', () => {
     const n = repeat(charIn('0123456789')).productT(v => Number(v))
     const E = expression()
     // a = '+'
-    const a = charIn('+').productT(() => (l, r) => l + r)
+    const a = charIn('+').productT(() => (l:number, r:number) => l + r)
     // m = '-'
-    const m = charIn('-').productT(() => (l, r) => l - r)
+    const m = charIn('-').productT(() => (l:number, r:number) => l - r)
     // x = '*'
-    const x = charIn('*').productT(() => (l, r) => l * r)
+    const x = charIn('*').productT(() => (l:number, r:number) => l * r)
     // d = '/'
-    const d = charIn('/').productT(() => (l, r) => l / r)
+    const d = charIn('/').productT(() => (l:number, r:number) => l / r)
     // M = n (x | d  n)*
     const M = sequence(E, optional(repeat(sequence(choice(x, d), E).productNT<any>((l, op, r) => op(l, r)))))
     // A = M (a | m  M)*
@@ -190,13 +190,13 @@ describe('operator level and blank grammar productNT', () => {
     const n = repeat(charIn('0123456789')).productT(v => Number(v))
     const E = expression()
     // a = '+'
-    const a = charIn('+').productT(() => (l, r) => l + r)
+    const a = charIn('+').productT(() => (l:number, r:number) => l + r)
     // m = '-'
-    const m = charIn('-').productT(() => (l, r) => l - r)
+    const m = charIn('-').productT(() => (l:number, r:number) => l - r)
     // x = '*'
-    const x = charIn('*').productT(() => (l, r) => l * r)
+    const x = charIn('*').productT(() => (l:number, r:number) => l * r)
     // d = '/'
-    const d = charIn('/').productT(() => (l, r) => l / r)
+    const d = charIn('/').productT(() => (l:number, r:number) => l / r)
     // M = n (x | d  n)*
     const M = sequence(_, E, optional(repeat(sequence(_, choice(x, d), _, E, _).productNT<any>((l, op, r) => op(l, r)))))
     // A = M (a | m  M)*
