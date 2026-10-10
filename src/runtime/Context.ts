@@ -99,7 +99,7 @@ export default class Context<T> {
     }
 
     next() {
-        if (this.current === undefined) return
+        if (this.current === null) return
 
         if (this.currentBuilder) {
             this.currentBuilder.append(this.current)
@@ -150,7 +150,7 @@ export default class Context<T> {
         const symbol = builder.toString()
         ctx.createToken(symbol, pos, type)
 
-        const product = producer ? producer(symbol) : undefined
+        const product = (producer !== undefined) ? producer(symbol) : undefined
         if (product)
             ctx._stack.push(product)
 
@@ -181,7 +181,9 @@ export default class Context<T> {
         let count = nbArgs ? nbArgs : Context.calculateStackDepth(ctx, startPos, producer)
 
         while (count > 0 && !ctx._stack.isEmpty) {
-            args.unshift(ctx._stack.pop())
+            const value = ctx._stack.pop()
+            if (value === undefined) break
+            args.unshift(value)
             count--
         }
 
