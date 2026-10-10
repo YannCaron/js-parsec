@@ -31,8 +31,8 @@ import AstTerm from './src/ast/AstTerm'
 import AstUnary from './src/ast/AstUnary'
 import AstBinary from './src/ast/AstBinary'
 import AstTernary from './src/ast/AstTernary'
-import VisitContext from './src/ast/VisiteContext'
-import StackVisitContext from './src/ast/StackVisiteContext'
+import VisitContext from './src/ast/VisitContext'
+import StackVisitContext from './src/ast/StackVisitContext'
 import Visitor from './src/ast/Visitor'
 
 export {

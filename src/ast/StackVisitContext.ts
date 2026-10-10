@@ -1,5 +1,5 @@
 import { Stack } from "@cyann/js-commons";
-import VisitContext from "./VisiteContext";
+import VisitContext from "./VisitContext";
 
 export default class StackVisitContext<T> extends VisitContext<T> {
 
@@ -25,7 +25,7 @@ export default class StackVisitContext<T> extends VisitContext<T> {
         this._stack.push(value)
     }
 
-    pop() : T {
+    pop() : T | undefined {
         return this._stack.pop()
     }
 
