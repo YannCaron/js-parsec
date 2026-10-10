@@ -5,6 +5,7 @@ import {
     optional,
     repeat,
     sequence,
+    choice,
     wordIs,
     wordNotIn
 } from '../'
@@ -49,6 +50,25 @@ describe('basic wordNotIs', () => {
 
         expect(parser.parse(ctx)).toBe(Result.Parsed)
         expect(ctx.tokens.map(e => e.symbol)).toStrictEqual(["//", " comment"])
+    })
+
+})
+
+describe('wordNotIs state', () => {
+
+    test('', () => {
+        const ctx = new Context("xbx")
+        const parser = sequence(wordIs('x'), wordNotIn('x'), wordIs('x'))
+
+        expect(parser.parse(ctx)).toBe(Result.Parsed)
+    })
+
+    test('', () => {
+        const ctx = new Context("xxaxx")
+        const parser = sequence(wordIs('x'), choice(repeat(wordNotIn('x')), wordIs('xax')), wordIs('x'))
+
+        expect(parser.parse(ctx)).toBe(Result.Parsed)
+        expect(ctx.pos === 5)
     })
 
 })

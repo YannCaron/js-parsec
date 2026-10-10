@@ -119,6 +119,9 @@ export default class Context<T> {
         // run encapsulated lambda
         const res = lambda(ctx)
 
+        if (res === Result.Continue && ctx.pos != backup.pos)
+            throw new Error (`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
+
         if (res === Result.NotParsed) {
             ctx.pos = backup.pos
             ctx.buildersPos = backup.buildersPos

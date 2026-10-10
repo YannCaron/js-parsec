@@ -39,7 +39,7 @@ class WordNotIn<T> extends Parsem<T> {
             }
 
             ctx.next()
-            return Result.Continue
+            return Result.Parsed
         })
     }
 
