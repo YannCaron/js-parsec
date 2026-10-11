@@ -63,6 +63,26 @@ class MyVisitor extends Visitor {
 
 class EmptyVisitor extends Visitor {}
 
+class MyStaticVisitor extends Visitor {
+
+    static AUTO_TRAVERS = true
+
+    static visitRoot(_: Ast, ctx: MyVisitContext) {
+        ctx.setVisited('root')
+    }
+
+    static visitN(_: Ast, ctx: MyVisitContext) {
+        ctx.setVisited('node')
+    }
+
+    static visitT(_: Ast, ctx: MyVisitContext) {
+        ctx.setVisited('term')
+    }
+
+}
+
+class EmptyStaticVisitor extends Visitor {}
+
 describe('Ast visitor dispatching', () => {
 
     test('should call visitor methods', () => {
@@ -74,6 +94,15 @@ describe('Ast visitor dispatching', () => {
         assert.strictEqual(ctx.has('term'), true)
 
     })
+
+    test('should call visitor methods with static visitor class', () => {
+        const ctx = new MyVisitContext()
+        ast.accept(MyStaticVisitor, ctx)
+
+        assert.strictEqual(ctx.has('root'), true)
+        assert.strictEqual(ctx.has('node'), true)
+        assert.strictEqual(ctx.has('term'), true)
+    })
 })
 
 describe('Ast visitor not dispatching', () => {
@@ -83,6 +112,15 @@ describe('Ast visitor not dispatching', () => {
 
         assert.throws(() => { ast.accept(new EmptyVisitor(), ctx) }, Error)
 
+    })
+
+    test('should generate error with static visitor class', () => {
+        const ctx = new MyVisitContext()
+
+        assert.throws(
+            () => { ast.accept(EmptyStaticVisitor, ctx) },
+            /Visitor 'EmptyStaticVisitor' does not implement 'visitRoot'!/
+        )
     })
 })
 
