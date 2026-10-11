@@ -42,28 +42,32 @@ class MyVisitContext extends StackVisitContext<number> {
 }
 
 class MyVisitor extends Visitor {
-    
-    static AUTO_TRAVERS = true
 
-    static visitRoot(_:Ast, ctx: MyVisitContext) {
+    constructor() {
+        super(true)
+    }
+
+    visitRoot(_: Ast, ctx: MyVisitContext) {
         ctx.setVisited('root')
     }
 
-    static visitN(_:Ast, ctx: MyVisitContext) {
+    visitN(_: Ast, ctx: MyVisitContext) {
         ctx.setVisited('node')
     }
 
-    static visitT(_:Ast, ctx: MyVisitContext) {
+    visitT(_: Ast, ctx: MyVisitContext) {
         ctx.setVisited('term')
     }
 
 }
 
+class EmptyVisitor extends Visitor {}
+
 describe('Ast visitor dispatching', () => {
 
     test('should call visitor methods', () => {
         const ctx = new MyVisitContext()
-        ast.accept(MyVisitor, ctx)
+        ast.accept(new MyVisitor(), ctx)
 
         assert.strictEqual(ctx.has('root'), true)
         assert.strictEqual(ctx.has('node'), true)
@@ -77,10 +81,11 @@ describe('Ast visitor not dispatching', () => {
     test('should generate error', () => {
         const ctx = new MyVisitContext()
 
-        assert.throws(() => { ast.accept({} as any, ctx) }, Error)
+        assert.throws(() => { ast.accept(new EmptyVisitor(), ctx) }, Error)
 
     })
 })
+
 
 describe('Ast visitor toString', () => {
 

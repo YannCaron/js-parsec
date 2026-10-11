@@ -19,31 +19,34 @@ const add = new AstBinary('add', n1, mult)
 
 class MyVisitor extends Visitor {
 
-    static AUTO_TRAVERS = true
+    constructor() {
+        super(true)
+    }
 
-    static visitAdd(_: AstBinary, ctx: StackVisitContext<number>) {
+    visitAdd(_: AstBinary, ctx: StackVisitContext<number>) {
         const right = ctx.pop()!
         const left = ctx.pop()!
         ctx.push(left + right)
     }
 
-    static visitMult(_: AstBinary, ctx: StackVisitContext<number>) {
+    visitMult(_: AstBinary, ctx: StackVisitContext<number>) {
         const right = ctx.pop()!
         const left = ctx.pop()!
         ctx.push(left * right)
     }
 
-    static visitNumber(ast: AstTerm, ctx: StackVisitContext<number>) {
+    visitNumber(ast: AstTerm, ctx: StackVisitContext<number>) {
         ctx.push(Number.parseInt(ast.value))
     }
 
 }
 
+
 describe('Ast visitor traversal', () => {
 
     test('should calculate', () => {
         const ctx = new StackVisitContext<number>()
-        add.accept(MyVisitor, ctx)
+        add.accept(new MyVisitor(), ctx)
 
         assert.strictEqual(ctx.result, 14)
 
@@ -54,8 +57,8 @@ describe('Ast array', () => {
 
     test('should calculate twice', () => {
         const ctx = new StackVisitContext<number>()
-        add.accept(MyVisitor, ctx)
-        add.accept(MyVisitor, ctx)
+        add.accept(new MyVisitor(), ctx)
+        add.accept(new MyVisitor(), ctx)
 
         assert.deepStrictEqual(ctx.result, [14, 14])
 
