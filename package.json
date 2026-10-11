@@ -1,6 +1,6 @@
 {
   "name": "@cyann/js-parsec",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "A js/ts LL(*) parsing library based on combinator framework.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,6 +12,7 @@
     "build": "tsc",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-transform-types --test",
     "doc": "jsdoc --readme ./readme.md --destination ./doc ./",
+    "prepack": "npm run build",
     "publish": "npm publish --access public"
   },
   "keywords": [
@@ -32,6 +33,6 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@cyann/js-commons": "^0.2.2"
+    "@cyann/js-commons": "^0.2.7"
   }
 }
