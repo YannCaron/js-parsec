@@ -16,8 +16,7 @@ export default class AstUnary extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        const autoTraverse = Visitor.AUTO_TRAVERS_PROPERTY_NAME as keyof Visitor
-        if (visitor[autoTraverse]) {
+        if (visitor.autoTraverse) {
             this._operand1.accept(visitor, ctx)
         }
         super.accept(visitor, ctx)

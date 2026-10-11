@@ -6,7 +6,7 @@ export default abstract class Ast {
 
     private readonly _type: string
 
-    get type():string {
+    get type(): string {
         return this._type
     }
 
@@ -19,10 +19,7 @@ export default abstract class Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        const visit = (visitor as Record<string, any>)[this._functionName]
-        if (!visit)
-            throw new Error(`Visitor '${String(visitor)}' does not contain '${this._functionName}' static method!`)
-        visit.call(visitor, this, ctx)
+        visitor.dispatch(this, ctx, this._functionName)
     }
 
     abstract toString(): string

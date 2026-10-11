@@ -22,7 +22,7 @@ export default class AstBinary extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if (Reflect.get(visitor, Visitor.AUTO_TRAVERS_PROPERTY_NAME)) {
+        if (visitor.autoTraverse) {
             this._operand1.accept(visitor, ctx)
             this._operand2.accept(visitor, ctx)
         }

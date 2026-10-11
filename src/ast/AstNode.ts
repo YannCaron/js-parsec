@@ -16,7 +16,7 @@ export default class AstNode extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if ((visitor as any)[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
+        if (visitor.autoTraverse) {
             for (const child of this._children) {
                 child.accept(visitor, ctx)
             }

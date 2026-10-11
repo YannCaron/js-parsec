@@ -28,7 +28,7 @@ export default class AstTernary extends Ast {
     }
 
     accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
-        if ((visitor as any)[Visitor.AUTO_TRAVERS_PROPERTY_NAME]) {
+        if (visitor.autoTraverse) {
             this._operand1.accept(visitor, ctx)
             this._operand2.accept(visitor, ctx)
             this._operand3.accept(visitor, ctx)
