@@ -1,10 +1,12 @@
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
 import {
     Context,
     Result,
     charIn,
     sequence,
     wordIs
-} from '..'
+} from '../index.ts'
 
 describe('basic wordIs', () => {
 
@@ -12,27 +14,27 @@ describe('basic wordIs', () => {
 
     test('wordIs should parse "hi world"', () => {
         const ctx = new Context("hi world")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.pos).toBe(8)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 8)
     })
 
     test('wordIs should not parse "hi wurld"', () => {
         const ctx = new Context("hi wurld")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
-        expect(ctx.pos).toBe(0)
-        expect(ctx.tokens).toStrictEqual([])
-        expect(ctx.stack).toStrictEqual([])
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+        assert.strictEqual(ctx.pos, 0)
+        assert.deepStrictEqual(ctx.tokens, [])
+        assert.deepStrictEqual(ctx.stack, [])
     })
     
     test('wordIs to string', () => {
-        expect(parser.toString()).toBe(`("hi" [ ] "world")`)
+        assert.strictEqual(parser.toString(), `("hi" [ ] "world")`)
     })
     
     test('wordIs should not parse ""', () => {
         const p = wordIs("")
         const ctx = new Context("")
 
-        expect(p.parse(ctx)).toBe(Result.Continue);
+        assert.strictEqual(p.parse(ctx), Result.Continue)
     })
 
 })

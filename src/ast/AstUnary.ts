@@ -1,6 +1,6 @@
-import Ast from "./Ast";
-import VisitContext from "./VisitContext";
-import Visitor from "./Visitor";
+import Ast from "./Ast.ts";
+import VisitContext from "./VisitContext.ts";
+import Visitor from "./Visitor.ts";
 
 export default class AstUnary extends Ast {
 

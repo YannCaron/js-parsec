@@ -1,6 +1,6 @@
-import { Parsem, ParsemDecorator } from "./Parsem"
-import Context from "./runtime/Context"
-import { Result } from "./runtime/Result"
+import { Parsem, ParsemDecorator } from "./Parsem.ts"
+import Context from "./runtime/Context.ts"
+import { Result } from "./runtime/Result.ts"
 
 class Repeat<T> extends ParsemDecorator<T> {
 

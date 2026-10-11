@@ -1,5 +1,5 @@
 import { Stack } from "@cyann/js-commons";
-import VisitContext from "./VisitContext";
+import VisitContext from "./VisitContext.ts";
 
 export default class StackVisitContext<T> extends VisitContext<T> {
 

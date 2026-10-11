@@ -1,12 +1,15 @@
-import AstBinary from "../../src/ast/AstBinary"
-import AstTerm from "../../src/ast/AstTerm"
-import StackVisitContext from "../../src/ast/StackVisitContext"
-import Visitor from "../../src/ast/Visitor"
-import Context from "../../src/runtime/Context"
-import choice from "../../src/choice"
-import wordIs from "../../src/wordIs"
-import { TokenType } from "../../src/runtime/TokenType"
-import '../../src/productT'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import AstBinary from "../../src/ast/AstBinary.ts"
+import AstTerm from "../../src/ast/AstTerm.ts"
+import StackVisitContext from "../../src/ast/StackVisitContext.ts"
+import Visitor from "../../src/ast/Visitor.ts"
+import Context from "../../src/runtime/Context.ts"
+import Token from "../../src/runtime/Token.ts"
+import choice from "../../src/choice.ts"
+import wordIs from "../../src/wordIs.ts"
+import { TokenType } from "../../src/runtime/TokenType.ts"
+import '../../src/productT.ts'
 
 const n3 = new AstTerm('number', '5')
 const n2 = new AstTerm('number', '2')
@@ -42,7 +45,7 @@ describe('Ast visitor traversal', () => {
         const ctx = new StackVisitContext<number>()
         add.accept(MyVisitor, ctx)
 
-        expect(ctx.result).toBe(14)
+        assert.strictEqual(ctx.result, 14)
 
     })
 })
@@ -54,7 +57,7 @@ describe('Ast array', () => {
         add.accept(MyVisitor, ctx)
         add.accept(MyVisitor, ctx)
 
-        expect(ctx.result).toStrictEqual([14, 14])
+        assert.deepStrictEqual(ctx.result, [14, 14])
 
     })
 })
@@ -66,8 +69,8 @@ describe('Backtracking', () => {
         const ctx = new Context(':=')
         grammar.parse(ctx)
 
-        expect(ctx.tokens).toEqual([
-            { _symbol: ':=', _pos: 0, _type: '' }
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token(':=', 0, '')
         ])
     })
 
@@ -76,9 +79,9 @@ describe('Backtracking', () => {
         const ctx = new Context(':=')
         grammar.parse(ctx)
 
-        expect(ctx.tokens).toEqual([
-            { _symbol: ':', _pos: 0, _type: TokenType.PUNCTUATION },
-            { _symbol: '=', _pos: 1, _type: TokenType.PUNCTUATION }
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token(':', 0, TokenType.PUNCTUATION),
+            new Token('=', 1, TokenType.PUNCTUATION)
         ])
     })
 

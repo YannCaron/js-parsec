@@ -1,10 +1,12 @@
-import charIn from "../src/charIn";
-import optional from "../src/optional";
-import choice from "../src/choice";
-import Context from "../src/runtime/Context";
-import { Result } from "../src/runtime/Result";
-import Token from "../src/runtime/Token";
-import { TokenType } from "../src/runtime/TokenType";
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import charIn from "../src/charIn.ts";
+import optional from "../src/optional.ts";
+import choice from "../src/choice.ts";
+import Context from "../src/runtime/Context.ts";
+import { Result } from "../src/runtime/Result.ts";
+import Token from "../src/runtime/Token.ts";
+import { TokenType } from "../src/runtime/TokenType.ts";
 
 describe('basic optional', () => {
 
@@ -12,17 +14,17 @@ describe('basic optional', () => {
 
     test('optional should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('optional should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('optional should not parse "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.Continue);
+        assert.strictEqual(parser.parse(ctx), Result.Continue)
     })
 
 })
@@ -31,19 +33,19 @@ describe('nested optionals', () => {
 
     const parser = optional(optional(charIn("ab")))
     
-    test('', () => {
+    test('optional should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
         
-    test('', () => {
+    test('optional should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
             
-    test('', () => {
+    test('optional should continue on "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.Continue);
+        assert.strictEqual(parser.parse(ctx), Result.Continue)
     })
 
 });
@@ -55,22 +57,22 @@ describe('nested optionals with choice', () => {
         charIn("c")
     )
     
-    test('', () => {
+    test('choice should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
         
-    test('', () => {
+    test('choice should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
             
-    test('', () => {
+    test('choice should parse "c" and produce punctuation token', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
 
-        expect(ctx.tokens.length).toBe(1);
-        expect(ctx.tokens.pop() == new Token('c', 0, TokenType.PUNCTUATION));
+        assert.strictEqual(ctx.tokens.length, 1)
+        assert.deepStrictEqual(ctx.tokens.pop(), new Token('c', 0, TokenType.PUNCTUATION))
     })
 
 });

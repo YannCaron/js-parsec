@@ -1,13 +1,15 @@
-import Context from "../src/runtime/Context";
-import { expression } from "../src/expression";
-import charIn from "../src/charIn";
-import choice from "../src/choice";
-import optional from "../src/optional";
-import repeat from "../src/repeat";
-import sequence from "../src/sequence";
-import { Result } from "../src/runtime/Result";
-import '../src/productT'
-import '../src/productNT'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Context from "../src/runtime/Context.ts";
+import { expression } from "../src/expression.ts";
+import charIn from "../src/charIn.ts";
+import choice from "../src/choice.ts";
+import optional from "../src/optional.ts";
+import repeat from "../src/repeat.ts";
+import sequence from "../src/sequence.ts";
+import { Result } from "../src/runtime/Result.ts";
+import '../src/productT.ts'
+import '../src/productNT.ts'
 
 describe('productNT basic functions', () => {
 
@@ -18,14 +20,14 @@ describe('productNT basic functions', () => {
 
     test('test "1"', () => {
         const ctx = new Context<number>("1")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([1])
-        expect(ctx.result).toBe(1)
+        assert.deepStrictEqual(ctx.stack, [1])
+        assert.strictEqual(ctx.result, 1)
     })
 
     test('test toString', () => {
-        expect(A.toString()).toBe("[0123456789]+")
+        assert.strictEqual(A.toString(), "[0123456789]+")
     })
 
 })
@@ -39,10 +41,10 @@ describe('productNT rest lambda', () => {
 
     test('test "1,2,3,4"', () => {
         const ctx = new Context<number>("1,2,3,4")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([[1, 2, 3, 4]])
-        expect(ctx.result).toStrictEqual([1, 2, 3, 4])
+        assert.deepStrictEqual(ctx.stack, [[1, 2, 3, 4]])
+        assert.deepStrictEqual(ctx.result, [1, 2, 3, 4])
     })
 
 })
@@ -56,27 +58,27 @@ describe('simple grammar productNT', () => {
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([1])
-        expect(ctx.result).toBe(1)
+        assert.deepStrictEqual(ctx.stack, [1])
+        assert.strictEqual(ctx.result, 1)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1+2")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([3])
-        expect(ctx.result).toBe(3)
+        assert.deepStrictEqual(ctx.stack, [3])
+        assert.strictEqual(ctx.result, 3)
     })
 
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1+2+3+4")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([10])
-        expect(ctx.result).toBe(10)
+        assert.deepStrictEqual(ctx.stack, [10])
+        assert.strictEqual(ctx.result, 10)
     })
 
 })
@@ -103,27 +105,27 @@ describe('operator grammar productNT', () => {
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([1])
-        expect(ctx.result).toBe(1)
+        assert.deepStrictEqual(ctx.stack, [1])
+        assert.strictEqual(ctx.result, 1)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1-2")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([-1])
-        expect(ctx.result).toBe(-1)
+        assert.deepStrictEqual(ctx.stack, [-1])
+        assert.strictEqual(ctx.result, -1)
     })
 
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1+2-3+4")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([4])
-        expect(ctx.result).toBe(4)
+        assert.deepStrictEqual(ctx.stack, [4])
+        assert.strictEqual(ctx.result, 4)
     })
 
 })
@@ -150,34 +152,34 @@ describe('operator level grammar productNT', () => {
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([1])
-        expect(ctx.result).toBe(1)
+        assert.deepStrictEqual(ctx.stack, [1])
+        assert.strictEqual(ctx.result, 1)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1*2")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([2])
-        expect(ctx.result).toBe(2)
+        assert.deepStrictEqual(ctx.stack, [2])
+        assert.strictEqual(ctx.result, 2)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1+2*3-4")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([3])
-        expect(ctx.result).toBe(3)
+        assert.deepStrictEqual(ctx.stack, [3])
+        assert.strictEqual(ctx.result, 3)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("(1+2)*3-4")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([5])
-        expect(ctx.result).toBe(5)
+        assert.deepStrictEqual(ctx.stack, [5])
+        assert.strictEqual(ctx.result, 5)
     })
 
 })
@@ -206,10 +208,10 @@ describe('operator level and blank grammar productNT', () => {
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>(" ( 1 + 2 ) * 3 - 4 ")
-        expect(A.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        expect(ctx.stack).toStrictEqual([5])
-        expect(ctx.result).toBe(5)
+        assert.deepStrictEqual(ctx.stack, [5])
+        assert.strictEqual(ctx.result, 5)
     })
 
 })

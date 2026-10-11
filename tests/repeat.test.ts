@@ -1,9 +1,11 @@
-import charIn from "../src/charIn";
-import optional from "../src/optional";
-import repeat from "../src/repeat";
-import Context from "../src/runtime/Context";
-import { Result } from "../src/runtime/Result";
-import sequence from "../src/sequence";
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import charIn from "../src/charIn.ts";
+import optional from "../src/optional.ts";
+import repeat from "../src/repeat.ts";
+import Context from "../src/runtime/Context.ts";
+import { Result } from "../src/runtime/Result.ts";
+import sequence from "../src/sequence.ts";
 
 describe('basic repeat', () => {
 
@@ -11,27 +13,27 @@ describe('basic repeat', () => {
 
     test('repeat should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "aa"', () => {
         const ctx = new Context("aa")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "aaa"', () => {
         const ctx = new Context("aaa")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should not parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should not parse ""', () => {
         const ctx = new Context("")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
 })
@@ -42,22 +44,22 @@ describe('combination repeat/optional', () => {
 
     test('repeat should parse "a" with no infinite loop', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "ab" with no infinite loop', () => {
         const ctx = new Context("ab")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "" with no infinite loop', () => {
         const ctx = new Context("")
-        expect(parser.parse(ctx)).toBe(Result.Continue);
+        assert.strictEqual(parser.parse(ctx), Result.Continue)
     })
 
     test('repeat should parse "b" with no infinite loop', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Continue);
+        assert.strictEqual(parser.parse(ctx), Result.Continue)
     })
 
 })
@@ -68,27 +70,27 @@ describe('combination repeat/sequence', () => {
 
     test('repeat should Not parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should Not parse "ab"', () => {
         const ctx = new Context("ab")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should not parse "aa"', () => {
         const ctx = new Context("aa")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should parse "aba"', () => {
         const ctx = new Context("aba")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "abbbbba"', () => {
         const ctx = new Context("abbbbba")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
 })
@@ -99,22 +101,22 @@ describe('combination repeat/sequence/optioanl', () => {
 
     test('repeat should Not parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should Not parse "ab"', () => {
         const ctx = new Context("ab")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
     test('repeat should parse "aa"', () => {
         const ctx = new Context("aa")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('repeat should parse "abbbbba"', () => {
         const ctx = new Context("abbbbba")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
 })

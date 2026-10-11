@@ -1,10 +1,12 @@
-import Context from "../src/runtime/Context";
-import charIn from "../src/charIn";
-import choice from "../src/choice";
-import optional from "../src/optional";
-import sequence from "../src/sequence";
-import { Result } from "../src/runtime/Result";
-import '../src/repeat'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Context from "../src/runtime/Context.ts";
+import charIn from "../src/charIn.ts";
+import choice from "../src/choice.ts";
+import optional from "../src/optional.ts";
+import sequence from "../src/sequence.ts";
+import { Result } from "../src/runtime/Result.ts";
+import '../src/repeat.ts'
 
 describe('basic choice/char', () => {
 
@@ -12,17 +14,17 @@ describe('basic choice/char', () => {
 
     test('choice should parse "a"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('choice should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('choice should not parse "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
 })
@@ -34,31 +36,31 @@ describe('choice backup', () => {
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("ab")
         parser.parse(ctx)
-        expect(ctx.pos).toBe(2)
+        assert.strictEqual(ctx.pos, 2)
     })
     
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("ad")
         parser.parse(ctx)
-        expect(ctx.pos).toBe(2)
+        assert.strictEqual(ctx.pos, 2)
     })
 
     test('choice that does not parse should be positioned at begining', () => {
         const ctx = new Context("ac")
         parser.parse(ctx)
-        expect(ctx.pos).toBe(0)
+        assert.strictEqual(ctx.pos, 0)
     })
 
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("cd")
         parser.parse(ctx)
-        expect(ctx.pos).toBe(2)
+        assert.strictEqual(ctx.pos, 2)
     })
 
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("cb")
         parser.parse(ctx)
-        expect(ctx.pos).toBe(2)
+        assert.strictEqual(ctx.pos, 2)
     })
 
 })
@@ -69,22 +71,22 @@ describe('combination choice/optional', () => {
 
     test('choice should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
     
     test('choice should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('choice should parse "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
     
     test('choice should not parse "d"', () => {
         const ctx = new Context("d")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
 })
@@ -94,32 +96,32 @@ describe('inline factory of choice', () => {
     test('"G => a | b" should parse "ab"', () => {
         const parser = charIn("a").or(charIn('b'))
         const ctx = new Context("ab")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('"G => (a | b) | c" should merge', () => {
         const parser = charIn("a").or(charIn('b').or(charIn('c')))
-        expect(`${parser}`).toEqual("([a] | [b] | [c])")
+        assert.strictEqual(`${parser}`, "([a] | [b] | [c])")
     })
 
     test('"G => a | (b | c)" should merge', () => {
         const parser = charIn("a").or(charIn('b')).or(charIn('c'))
-        expect(`${parser}`).toEqual("([a] | [b] | [c])")
+        assert.strictEqual(`${parser}`, "([a] | [b] | [c])")
     })
 
     test('"G => ((a | b) | c | d)" should merge', () => {
         const parser = charIn("a").or(charIn('b').or(charIn('c'))).or(charIn('d'))
-        expect(`${parser}`).toEqual("([a] | [b] | [c] | [d])")
+        assert.strictEqual(`${parser}`, "([a] | [b] | [c] | [d])")
     })
     
     test('"G => ((a | b) | c | d)" should merge', () => {
         const parser = charIn("a").or(charIn('b')).optional().or(charIn('c'))
-        expect(`${parser}`).toEqual("(([a] | [b])? | [c])")
+        assert.strictEqual(`${parser}`, "(([a] | [b])? | [c])")
     })
         
     test('"G => ((a | b) | c | d)" should merge', () => {
         const parser = charIn("a").or(charIn('b')).optional().or(charIn('c')).repeat()
-        expect(`${parser}`).toEqual("(([a] | [b])? | [c])+")
+        assert.strictEqual(`${parser}`, "(([a] | [b])? | [c])+")
     })
 
 })

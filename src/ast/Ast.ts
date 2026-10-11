@@ -1,6 +1,6 @@
 import "@cyann/js-commons"
-import VisitContext from "./VisitContext";
-import Visitor from "./Visitor";
+import VisitContext from "./VisitContext.ts";
+import Visitor from "./Visitor.ts";
 
 export default abstract class Ast {
 

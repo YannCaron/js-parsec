@@ -1,5 +1,5 @@
-import Context from "./runtime/Context"
-import { Result } from "./runtime/Result"
+import Context from "./runtime/Context.ts"
+import { Result } from "./runtime/Result.ts"
 
 export abstract class Parsem<T> {
 

@@ -1,6 +1,6 @@
-import Context from "./runtime/Context"
-import { Parsem, ParsemDecorator } from "./Parsem"
-import { Result } from "./runtime/Result"
+import Context from "./runtime/Context.ts"
+import { Parsem, ParsemDecorator } from "./Parsem.ts"
+import { Result } from "./runtime/Result.ts"
 
 class ProductNT<T> extends ParsemDecorator<T> {
 

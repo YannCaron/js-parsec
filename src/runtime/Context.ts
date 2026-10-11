@@ -1,7 +1,7 @@
 import { Functions, Stack, StringBuilder } from '@cyann/js-commons'
-import { Result } from './Result'
-import Token from './Token'
-import { TokenType } from './TokenType'
+import { Result } from './Result.ts'
+import Token from './Token.ts'
+import { TokenType } from './TokenType.ts'
 
 export default class Context<T> {
 
@@ -151,7 +151,7 @@ export default class Context<T> {
         ctx.createToken(symbol, pos, type)
 
         const product = (producer !== undefined) ? producer(symbol) : undefined
-        if (product)
+        if (product != undefined)
             ctx._stack.push(product)
 
         return Result.Parsed

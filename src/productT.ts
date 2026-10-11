@@ -1,8 +1,8 @@
-import Context from "./runtime/Context"
-import { Parsem, ParsemDecorator } from "./Parsem"
-import { TokenType } from "./runtime/TokenType"
-import Token from "./runtime/Token"
-import { Result } from "./runtime/Result"
+import Context from "./runtime/Context.ts"
+import { Parsem, ParsemDecorator } from "./Parsem.ts"
+import { TokenType } from "./runtime/TokenType.ts"
+import Token from "./runtime/Token.ts"
+import { Result } from "./runtime/Result.ts"
 
 class ProductT<T> extends ParsemDecorator<T> {
 

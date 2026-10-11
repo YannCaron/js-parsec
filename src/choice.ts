@@ -1,6 +1,6 @@
-import Context from "./runtime/Context"
-import { Parsem, ParsemComposite } from "./Parsem"
-import { Result } from "./runtime/Result"
+import Context from "./runtime/Context.ts"
+import { Parsem, ParsemComposite } from "./Parsem.ts"
+import { Result } from "./runtime/Result.ts"
 
 class Choice<T> extends ParsemComposite<T> {
 

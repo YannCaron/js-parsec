@@ -1,6 +1,8 @@
-import Context from "../src/runtime/Context"
-import charInInterval from "../src/charInInterval"
-import { Result } from "../src/runtime/Result"
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Context from "../src/runtime/Context.ts"
+import charInInterval from "../src/charInInterval.ts"
+import { Result } from "../src/runtime/Result.ts"
 
 describe('basic charInInterval', () => {
 
@@ -8,22 +10,22 @@ describe('basic charInInterval', () => {
 
     test('charInInterval should parse "0"', () => {
         const ctx = new Context("0")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('charInInterval should parse "9"', () => {
         const ctx = new Context("9")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('charInInterval should parse "5"', () => {
         const ctx = new Context("5")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('charInInterval should not parse "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
 })
@@ -31,27 +33,27 @@ describe('basic charInInterval', () => {
 describe('charInInterval exception', () => {
 
     test('should generate an error', () => {
-        expect(() => {
+        assert.throws(() => {
             charInInterval('', '')
-        }).toThrow(Error);
+        }, Error)
     })
 
     test('should generate an error', () => {
-        expect(() => {
+        assert.throws(() => {
             charInInterval('ab', 'c')
-        }).toThrow(Error);
+        }, Error)
     })
     
     test('should generate an error', () => {
-        expect(() => {
+        assert.throws(() => {
             charInInterval('a', '')
-        }).toThrow(Error);
+        }, Error)
     })
 
     test('should generate an error', () => {
-        expect(() => {
+        assert.throws(() => {
             charInInterval('a', 'bc')
-        }).toThrow(Error);
+        }, Error)
     })
 
 })
@@ -61,7 +63,7 @@ describe('charInInterval toString', () => {
     const parser = charInInterval('0', '9')
 
     test('should parse "my string"', () => {
-        expect(parser.toString()).toBe('[0-9]');
+        assert.strictEqual(parser.toString(), '[0-9]')
     })
 
 })

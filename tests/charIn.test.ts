@@ -1,6 +1,8 @@
-import charIn from "../src/charIn"
-import Context from "../src/runtime/Context"
-import { Result } from "../src/runtime/Result"
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import charIn from "../src/charIn.ts"
+import Context from "../src/runtime/Context.ts"
+import { Result } from "../src/runtime/Result.ts"
 
 describe('basic charIn', () => {
 
@@ -8,17 +10,17 @@ describe('basic charIn', () => {
 
     test('charin should parse "a"', () => {
         const ctx = new Context("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('charin should parse "b"', () => {
         const ctx = new Context("b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed);
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
     test('charin should not parse "c"', () => {
         const ctx = new Context("c")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed);
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
     })
 
 })

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "types": [
-      "jest"
+      "node"
     ],
     "module": "commonjs",
     "target": "es2017",
@@ -11,7 +11,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "rewriteRelativeImportExtensions": true
   },
   "include": [
     "src/**/*",

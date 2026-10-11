@@ -1,11 +1,13 @@
-import Ast from "../../src/ast/Ast"
-import AstBinary from "../../src/ast/AstBinary"
-import AstNode from "../../src/ast/AstNode"
-import AstTerm from "../../src/ast/AstTerm"
-import AstTernary from "../../src/ast/AstTernary"
-import AstUnary from "../../src/ast/AstUnary"
-import StackVisitContext from "../../src/ast/StackVisitContext"
-import Visitor from "../../src/ast/Visitor"
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Ast from "../../src/ast/Ast.ts"
+import AstBinary from "../../src/ast/AstBinary.ts"
+import AstNode from "../../src/ast/AstNode.ts"
+import AstTerm from "../../src/ast/AstTerm.ts"
+import AstTernary from "../../src/ast/AstTernary.ts"
+import AstUnary from "../../src/ast/AstUnary.ts"
+import StackVisitContext from "../../src/ast/StackVisitContext.ts"
+import Visitor from "../../src/ast/Visitor.ts"
 
 const t34 = new AstTerm('t', '34')
 const n5 = new AstUnary('n', t34)
@@ -63,9 +65,9 @@ describe('Ast visitor dispatching', () => {
         const ctx = new MyVisitContext()
         ast.accept(MyVisitor, ctx)
 
-        expect(ctx.has('root')).toBe(true)
-        expect(ctx.has('node')).toBe(true)
-        expect(ctx.has('term')).toBe(true)
+        assert.strictEqual(ctx.has('root'), true)
+        assert.strictEqual(ctx.has('node'), true)
+        assert.strictEqual(ctx.has('term'), true)
 
     })
 })
@@ -75,7 +77,7 @@ describe('Ast visitor not dispatching', () => {
     test('should generate error', () => {
         const ctx = new MyVisitContext()
 
-        expect(() => {ast.accept({}, ctx)}).toThrow(Error)
+        assert.throws(() => { ast.accept({} as any, ctx) }, Error)
 
     })
 })
@@ -84,7 +86,7 @@ describe('Ast visitor toString', () => {
 
     test('visitor toString', () => {
         
-        expect(ast.toString()).toBe(`root(t('1'), n(t('21'), t('22')), n(t('31'), n(t('32'), t('33')), n(t('34'))))`)
+        assert.strictEqual(ast.toString(), `root(t('1'), n(t('21'), t('22')), n(t('31'), n(t('32'), t('33')), n(t('34'))))`)
 
     })
 })
@@ -94,19 +96,19 @@ describe('Test accessor', () => {
     test('should generate error', () => {
 
         // node
-        expect(ast.children.length).toBe(3)
+        assert.strictEqual(ast.children.length, 3)
 
         // unary
-        expect(n5.operand1.toString()).toBe("t('34')")
+        assert.strictEqual(n5.operand1.toString(), "t('34')")
 
         // binary
-        expect(n4.operand1.toString()).toBe("t('32')")
-        expect(n4.operand2.toString()).toBe("t('33')")
+        assert.strictEqual(n4.operand1.toString(), "t('32')")
+        assert.strictEqual(n4.operand2.toString(), "t('33')")
 
         // ternary
-        expect(n3.operand1.toString()).toBe("t('31')")
-        expect(n3.operand2.toString()).toBe("n(t('32'), t('33'))")
-        expect(n3.operand3.toString()).toBe("n(t('34'))")
+        assert.strictEqual(n3.operand1.toString(), "t('31')")
+        assert.strictEqual(n3.operand2.toString(), "n(t('32'), t('33'))")
+        assert.strictEqual(n3.operand3.toString(), "n(t('34'))")
 
     })
 })

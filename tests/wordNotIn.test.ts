@@ -1,3 +1,5 @@
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
 import {
     Context,
     Result,
@@ -8,7 +10,7 @@ import {
     choice,
     wordIs,
     wordNotIn
-} from '../'
+} from '../index.ts'
 
 describe('basic wordNotIs', () => {
 
@@ -16,8 +18,8 @@ describe('basic wordNotIs', () => {
         const ctx = new Context("/* here is a comment */")
         const parser = sequence(wordIs('/*'), repeat(optional(wordNotIn('*/'))), wordIs('*/'))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.pos).toBe(23)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 23)
     })
     
     test('wordNotIs should parse "/* here is a comment */"', () => {
@@ -27,8 +29,8 @@ describe('basic wordNotIs', () => {
             repeat(optional(wordNotIn('*/'))).productT(e => e), 
             wordIs('*/').productT(e => e))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.tokens.map(e => e.symbol)).toStrictEqual(["/*", " here is a comment ", "*/"])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ["/*", " here is a comment ", "*/"])
     })
 
     test('wordNotIs should parse "my string"', () => {
@@ -38,8 +40,8 @@ describe('basic wordNotIs', () => {
             repeat(optional(wordNotIn('"'))).productT(e => e), 
             charIn('"').productT(e => e))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.tokens.map(e => e.symbol)).toStrictEqual(['"', "my string", '"'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ['"', "my string", '"'])
     })
         
     test('wordNotIs should parse "// comment"', () => {
@@ -48,27 +50,27 @@ describe('basic wordNotIs', () => {
             wordIs('//').productT(e => e), 
             repeat(optional(wordNotIn('\n'))).productT(e => e))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.tokens.map(e => e.symbol)).toStrictEqual(["//", " comment"])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ["//", " comment"])
     })
 
 })
 
 describe('wordNotIs state', () => {
 
-    test('', () => {
+    test('wordNotIn single char match', () => {
         const ctx = new Context("xbx")
         const parser = sequence(wordIs('x'), wordNotIn('x'), wordIs('x'))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
     })
 
-    test('', () => {
+    test('wordNotIn choice fallback', () => {
         const ctx = new Context("xxaxx")
         const parser = sequence(wordIs('x'), choice(repeat(wordNotIn('x')), wordIs('xax')), wordIs('x'))
 
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.pos === 5)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 5)
     })
 
 })

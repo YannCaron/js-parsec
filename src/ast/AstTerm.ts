@@ -1,4 +1,4 @@
-import Ast from "./Ast";
+import Ast from "./Ast.ts";
 
 export default class AstTerm extends Ast {
 

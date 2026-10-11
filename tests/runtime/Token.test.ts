@@ -1,4 +1,6 @@
-import Token from './../../src/runtime/Token'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Token from '../../src/runtime/Token.ts'
 
 describe('basic Token tests', () => {
 
@@ -6,9 +8,9 @@ describe('basic Token tests', () => {
 
         const token = new Token('abc', 0)
 
-        expect(token.symbol).toBe('abc')
-        expect(token.pos).toBe(0)
-        expect(token.type).toBe(Token.DEFAULT_TYPE)
+        assert.strictEqual(token.symbol, 'abc')
+        assert.strictEqual(token.pos, 0)
+        assert.strictEqual(token.type, Token.DEFAULT_TYPE)
 
     })
 

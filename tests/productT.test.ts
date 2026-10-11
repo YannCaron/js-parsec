@@ -1,13 +1,15 @@
-import Context from "../src/runtime/Context";
-import charIn from "../src/charIn";
-import optional from "../src/optional";
-import repeat from "../src/repeat";
-import sequence from "../src/sequence";
-import { productT } from "../src/productT";
-import { Result } from "../src/runtime/Result";
-import Token from "../src/runtime/Token";
-import { TokenType } from "../src/runtime/TokenType";
-import '../src/choice'
+import { describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import Context from "../src/runtime/Context.ts";
+import charIn from "../src/charIn.ts";
+import optional from "../src/optional.ts";
+import repeat from "../src/repeat.ts";
+import sequence from "../src/sequence.ts";
+import { productT } from "../src/productT.ts";
+import { Result } from "../src/runtime/Result.ts";
+import Token from "../src/runtime/Token.ts";
+import { TokenType } from "../src/runtime/TokenType.ts";
+import '../src/choice.ts'
 
 describe('basic productT', () => {
 
@@ -15,14 +17,14 @@ describe('basic productT', () => {
 
     test('product should parse "a"', () => {
         const ctx = new Context<string>("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['a'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['a'])
     })
 
     test('product should not parse "c"', () => {
         const ctx = new Context<string>("c")
-        expect(parser.parse(ctx)).toBe(Result.NotParsed)
-        expect(ctx.stack).toStrictEqual([])
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+        assert.deepStrictEqual(ctx.stack, [])
     })
 
 })
@@ -33,20 +35,20 @@ describe('chain productT with optional', () => {
 
     test('product should parse "ab"', () => {
         const ctx = new Context<string>("ab")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['a', 'b'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
     })
 
     test('product should parse "a b"', () => {
         const ctx = new Context<string>("a b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['a', 'b'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
     })
 
     test('product should parse "a  b"', () => {
         const ctx = new Context<string>("a  b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['a', 'b'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
     })
 
 })
@@ -59,9 +61,9 @@ describe('token productT', () => {
 
     test('product should parse "10 20 "', () => {
         const ctx = new Context("10 20 ")
-        expect(G.parse(ctx)).toBe(Result.Parsed)
+        assert.strictEqual(G.parse(ctx), Result.Parsed)
 
-        expect(ctx.tokens).toStrictEqual([
+        assert.deepStrictEqual(ctx.tokens, [
             new Token('10', 0, TokenType.NUMBER),
             new Token(' ', 2, TokenType.PUNCTUATION),
             new Token('20', 3, TokenType.NUMBER),
@@ -77,14 +79,14 @@ describe('encapsulated productT', () => {
 
     test('product should parse "ab"', () => {
         const ctx = new Context("ab")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['ab'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['ab'])
     })
 
     test('product should parse "a  b"', () => {
         const ctx = new Context("a  b")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['  ', 'ab'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['  ', 'ab'])
     })
 
 })
@@ -94,8 +96,8 @@ describe('inline factory of productT', () => {
     test('"G => a | b" should parse "a"', () => {
         const parser = charIn("a").or(charIn('b')).productT(s => s)
         const ctx = new Context<string>("a")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual(['a'])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, ['a'])
     })
 
 })
@@ -107,8 +109,8 @@ describe('production of productT', () => {
 
     test('product should parse "2+2"', () => {
         const ctx = new Context("2+2")
-        expect(parser.parse(ctx)).toBe(Result.Parsed)
-        expect(ctx.stack).toStrictEqual([2, 2])
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [2, 2])
     })
 
 })
