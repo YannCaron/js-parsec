@@ -12,6 +12,9 @@
 # jsdoc
 /doc
 
+# agent
+/temp
+
 # misc
 .DS_Store
 .env.local
