@@ -90,7 +90,7 @@ export default class Context<T> {
         if (this._stack.length === 1) {
             return this._stack.last
         }
-     
+
         const res = this.result
         return Array.isArray(res) ? res.first : res
     }
@@ -119,7 +119,13 @@ export default class Context<T> {
     }
 
     static handleBackup<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
-        const backup = { pos: ctx._pos, buildersPos: ctx.buildersPos, builderPos: ctx.builderPos, tokensPos: ctx.tokensPos, stackPos: ctx.stackPos }
+        const backup = {
+            pos: ctx._pos,
+            buildersPos: ctx.buildersPos,
+            builderPos: ctx.builderPos,
+            tokensPos: ctx.tokensPos,
+            stack: [...ctx._stack]
+        }
 
         // run encapsulated lambda
         const res = lambda(ctx)
@@ -132,7 +138,7 @@ export default class Context<T> {
             ctx.buildersPos = backup.buildersPos
             ctx.builderPos = backup.builderPos
             ctx.tokensPos = backup.tokensPos
-            ctx.stackPos = backup.stackPos
+            ctx._stack.splice(0, ctx._stack.length, ...backup.stack)
         }
 
         return res
@@ -156,7 +162,7 @@ export default class Context<T> {
         ctx.createToken(symbol, pos, type)
 
         const product = (producer !== undefined) ? producer(symbol) : undefined
-        if (product != undefined)
+        if (product !== undefined)
             ctx._stack.push(product)
 
         return Result.Parsed
