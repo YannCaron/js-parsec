@@ -41,12 +41,41 @@ class MyVisitor extends Visitor {
 
 }
 
+class MyStaticVisitor extends Visitor {
+
+    static AUTO_TRAVERS = true
+
+    static visitAdd(_: AstBinary, ctx: StackVisitContext<number>) {
+        const right = ctx.pop()!
+        const left = ctx.pop()!
+        ctx.push(left + right)
+    }
+
+    static visitMult(_: AstBinary, ctx: StackVisitContext<number>) {
+        const right = ctx.pop()!
+        const left = ctx.pop()!
+        ctx.push(left * right)
+    }
+
+    static visitNumber(ast: AstTerm, ctx: StackVisitContext<number>) {
+        ctx.push(Number.parseInt(ast.value))
+    }
+
+}
 
 describe('Ast visitor traversal', () => {
 
     test('should calculate', () => {
         const ctx = new StackVisitContext<number>()
         add.accept(new MyVisitor(), ctx)
+
+        assert.strictEqual(ctx.result, 14)
+
+    })
+
+    test('should calculate with static visitor class', () => {
+        const ctx = new StackVisitContext<number>()
+        add.accept(MyStaticVisitor, ctx)
 
         assert.strictEqual(ctx.result, 14)
 
