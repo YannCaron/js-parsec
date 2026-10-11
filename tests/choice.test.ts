@@ -125,3 +125,12 @@ describe('inline factory of choice', () => {
     })
 
 })
+
+describe('empty choice toString', () => {
+
+    test('choice().toString() should not throw on empty children', () => {
+        const parser = choice()
+        assert.doesNotThrow(() => parser.toString())
+    })
+
+})

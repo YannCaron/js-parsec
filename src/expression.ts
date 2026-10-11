@@ -4,10 +4,10 @@ import { Result } from "./runtime/Result.ts"
 
 class Null<T> extends Parsem<T> {
     parse(_: Context<T>): Result {
-        return Result.Parsed
+        throw new Error("Recursive expression reference 'ref' is not initialized!")
     }
     toString(): string {
-        return ''
+        return '<uninitialized>'
     }
 }
 

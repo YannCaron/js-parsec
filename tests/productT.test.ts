@@ -114,3 +114,29 @@ describe('production of productT', () => {
     })
 
 })
+
+describe('falsy values in productT', () => {
+
+    test('productT should preserve number 0 in stack', () => {
+        const num = charIn('0123456789')
+        const parser = sequence(productT(num, v => Number(v)), charIn('+'), productT(num, v => Number(v)))
+        const ctx = new Context("0+0")
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [0, 0])
+    })
+
+    test('productT should preserve boolean false in stack', () => {
+        const parser = charIn('f').productT(() => false)
+        const ctx = new Context("f")
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [false])
+    })
+
+    test('productT should preserve empty string in stack', () => {
+        const parser = charIn('a').productT(() => "")
+        const ctx = new Context("a")
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [""])
+    })
+
+})

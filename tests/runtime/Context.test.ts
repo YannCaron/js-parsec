@@ -44,3 +44,15 @@ describe('exception Context', () => {
     })
 
 })
+
+describe('Context uniqueResult array preservation', () => {
+
+    test('uniqueResult should preserve single produced array', () => {
+        const ctx = new Context<Array<string>>("a")
+        const parser = charIn('a').productT(() => ['first', 'second'])
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.uniqueResult, ['first', 'second'])
+    })
+
+})

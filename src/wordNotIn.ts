@@ -4,7 +4,7 @@ import { Result } from "./runtime/Result.ts"
 
 class WordNotIn<T> extends Parsem<T> {
 
-    private _strs: string[]
+    private readonly _strs: string[]
 
     public constructor(...strs: string[]) {
         super()
@@ -24,11 +24,10 @@ class WordNotIn<T> extends Parsem<T> {
 
     }
 
-    // TODO: Continue here by creating unit test
-
     parse(ctx: Context<T>): Result {
         if (this._strs.isEmpty) return Result.Continue
-
+        if (ctx.current === null) return Result.NotParsed
+  
         return Context.handleBackup(ctx, ctx => {
 
             for (const str of this._strs) {
@@ -44,7 +43,7 @@ class WordNotIn<T> extends Parsem<T> {
     }
 
     toString(): string {
-        return `[^${this._strs.map(e => `(${e})`).join(' | ')}]`
+        return `[^${this._strs.map(String).join(' | ')}]`
     }
 
 }

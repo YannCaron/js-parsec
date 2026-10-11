@@ -74,3 +74,30 @@ describe('wordNotIs state', () => {
     })
 
 })
+
+describe('wordNotIn edge cases and invariants', () => {
+
+    test('wordNotIn should not parse on empty input', () => {
+        const ctx = new Context("")
+        const parser = wordNotIn('x')
+
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+    })
+
+    test('repeat(wordNotIn) should parse until end of stream without infinite loop', () => {
+        const ctx = new Context("abc")
+        const parser = repeat(wordNotIn('x'))
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 3)
+    })
+
+    test('sequence(wordIs, wordNotIn) should not parse when stream ends after first token', () => {
+        const ctx = new Context("a")
+        const parser = sequence(wordIs('a'), wordNotIn('x'))
+
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+    })
+
+})
+

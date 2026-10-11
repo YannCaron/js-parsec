@@ -9,7 +9,7 @@ import repeat from "../src/repeat.ts";
 import sequence from "../src/sequence.ts";
 import { Result } from "../src/runtime/Result.ts";
 import '../src/productT.ts'
-import '../src/productNT.ts'
+import { productNT } from '../src/productNT.ts'
 
 describe('productNT basic functions', () => {
 
@@ -212,6 +212,26 @@ describe('operator level and blank grammar productNT', () => {
 
         assert.deepStrictEqual(ctx.stack, [5])
         assert.strictEqual(ctx.result, 5)
+    })
+
+})
+
+describe('productNT argument extraction edge cases', () => {
+
+    test('productNT should support 0-arg producer function', () => {
+        const parser = productNT(charIn('a'), () => 42)
+        const ctx = new Context<number>("a")
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [42])
+    })
+
+    test('productNT should respect explicit nbArgs = 0', () => {
+        const parser = productNT(charIn('a'), () => 99, 0)
+        const ctx = new Context<number>("a")
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.stack, [99])
     })
 
 })

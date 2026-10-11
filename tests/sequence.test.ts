@@ -148,19 +148,28 @@ describe('inline factory of sequence', () => {
         assert.strictEqual(`${parser}`, "([a] [b] [c])")
     })
 
-    test('"G => ((a b) c d)" should merge', () => {
+    test('"G => (a b c d)" should merge', () => {
         const parser = charIn("a").then(charIn('b').then(charIn('c'))).then(charIn('d'))
         assert.strictEqual(`${parser}`, "([a] [b] [c] [d])")
     })
     
-    test('"G => ((a b) c d)" should merge', () => {
+    test('"G => ((a b)? c d)" should merge', () => {
         const parser = charIn("a").then(charIn('b')).optional().then(charIn('c'))
         assert.strictEqual(`${parser}`, "(([a] [b])? [c])")
     })
         
-    test('"G => ((a b) c d)" should merge', () => {
+    test('"G => ((a b)? c d)+" should merge', () => {
         const parser = charIn("a").then(charIn('b')).optional().then(charIn('c')).repeat()
         assert.strictEqual(`${parser}`, "(([a] [b])? [c])+")
+    })
+
+})
+
+describe('empty sequence toString', () => {
+
+    test('sequence().toString() should not throw on empty children', () => {
+        const parser = sequence()
+        assert.doesNotThrow(() => parser.toString())
     })
 
 })

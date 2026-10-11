@@ -87,7 +87,12 @@ export default class Context<T> {
     }
 
     get uniqueResult(): T {
-        return Array.isArray(this.result) ? this.result.first : this.result
+        if (this._stack.length === 1) {
+            return this._stack.last
+        }
+     
+        const res = this.result
+        return Array.isArray(res) ? res.first : res
     }
 
     constructor(src: string) {
@@ -120,7 +125,7 @@ export default class Context<T> {
         const res = lambda(ctx)
 
         if (res === Result.Continue && ctx.pos != backup.pos)
-            throw new Error (`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
+            throw new Error(`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
 
         if (res === Result.NotParsed) {
             ctx.pos = backup.pos
@@ -160,6 +165,7 @@ export default class Context<T> {
     static calculateStackDepth<T>(ctx: Context<T>, startPos: number, lambda: (...v: Array<T>) => T): number {
         const delta = ctx.stackPos - startPos
         const producerArgs = Functions.extractArguments(lambda)
+        if (producerArgs.length === 0) return 0 // <-- 0 argument attendu
         const hasRest = Functions.hasRestArgument(producerArgs)
 
         return hasRest ?
@@ -178,7 +184,7 @@ export default class Context<T> {
             return res
 
         const args = new Array<T>()
-        let count = nbArgs ? nbArgs : Context.calculateStackDepth(ctx, startPos, producer)
+        let count = nbArgs !== undefined ? nbArgs : Context.calculateStackDepth(ctx, startPos, producer)
 
         while (count > 0 && !ctx._stack.isEmpty) {
             const value = ctx._stack.pop()

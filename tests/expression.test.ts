@@ -91,3 +91,14 @@ describe('operator level grammar Expression', () => {
     })
 
 })
+
+describe('uninitialized expression error handling', () => {
+
+    test('uninitialized expression should throw error on parse', () => {
+        const E = expression()
+        const ctx = new Context("abc")
+
+        assert.throws(() => E.parse(ctx), Error)
+    })
+
+})

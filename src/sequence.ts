@@ -31,7 +31,7 @@ class Sequence<T> extends ParsemComposite<T> {
     }
 
     toString(): string {
-        const chain = this.children.map(e => e.toString()).reduce((acc, e) => `${acc} ${e}`)
+        const chain = this.children.map(String).join(' ')
         return `(${chain})`
     }
 
