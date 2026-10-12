@@ -2,6 +2,7 @@ import { Functions, StringBuilder } from "@cyann/js-commons"
 import Context from "./Context.ts"
 import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
+import { Parsem } from "../Parsem.ts"
 
 export default class Utils {
 
@@ -29,6 +30,13 @@ export default class Utils {
         }
 
         return res
+    }
+
+    static handlePackrat<T>(clazz: typeof Parsem, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+        
+        const res = lambda(ctx)
+        return res;
+
     }
 
     static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {

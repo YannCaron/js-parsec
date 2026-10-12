@@ -1,6 +1,13 @@
 import { Stack, StringBuilder } from '@cyann/js-commons'
 import Token from './Token.ts'
 import { TokenType } from './TokenType.ts'
+import { Expression } from '../expression.ts'
+import { Result } from './Result.ts';
+
+interface MemoEntry {
+    result: Result;
+    pos: number;
+}
 
 export default class Context<T> {
 
@@ -12,6 +19,7 @@ export default class Context<T> {
 
     readonly _tokens: Array<Token>;
     readonly _stack: Stack<T>;
+    readonly _memoizer: WeakMap<typeof Expression, Map<number, MemoEntry>>
 
     get pos(): number {
         return this._pos
@@ -94,12 +102,28 @@ export default class Context<T> {
         return Array.isArray(res) ? res.first : res
     }
 
+    getMemo(clazz: typeof Expression, pos: number):MemoEntry | undefined {
+        return this._memoizer.get(clazz)?.get(pos)
+    }
+
+    setMemo(clazz: typeof Expression, pos: number, entry: MemoEntry):void {
+        let position = this._memoizer.get(clazz)
+
+        if (!position) {
+            position = new Map<number, MemoEntry>
+            this._memoizer.set(clazz, position)
+        }
+
+        position.set(pos, entry)
+    }
+
     constructor(src: string) {
         this._src = src
         this._pos = 0
         this._builders = new Stack<StringBuilder>()
         this._tokens = new Array<Token>()
         this._stack = new Stack<T>()
+        this._memoizer = new WeakMap<typeof Expression, Map<number, MemoEntry>>();
     }
 
     next() {

@@ -9,7 +9,10 @@ class Choice<T> extends ParsemComposite<T> {
 
         for (const child of this.children) {
 
-            if (Utils.handleBackup<T>(ctx, ctx => child.parse(ctx)) === Result.Parsed) {
+            if (Utils.handlePackrat<T>(Choice, ctx,
+                ctx => Utils.handleBackup<T>(ctx, 
+                    ctx => child.parse(ctx))) === Result.Parsed) {
+                    
                 return Result.Parsed
             }
 
@@ -36,6 +39,6 @@ declare module "./Parsem" {
     }
 }
 
-Parsem.prototype.or = function<T> (...children: Array<Parsem<T>>) {
+Parsem.prototype.or = function <T>(...children: Array<Parsem<T>>) {
     return choice(...ParsemComposite.flattenChain<T>(this, children, Choice))
 }
