@@ -1,6 +1,6 @@
 import Ast from "./Ast.ts";
 import VisitContext from "./VisitContext.ts";
-import Visitor, { type VisitorConstructor } from "./Visitor.ts";
+import Visitor from "./Visitor.ts";
 
 export default class AstTernary extends Ast {
 
@@ -27,8 +27,8 @@ export default class AstTernary extends Ast {
         this._operand3 = operand3
     }
 
-    accept<T, C extends VisitContext<T>>(visitor: Visitor | VisitorConstructor, ctx: C): void {
-        if (Visitor.isAutoTraverse(visitor)) {
+    accept<T, C extends VisitContext<T>>(visitor: Visitor, ctx: C): void {
+        if (visitor.autoTraverse) {
             this._operand1.accept(visitor, ctx)
             this._operand2.accept(visitor, ctx)
             this._operand3.accept(visitor, ctx)

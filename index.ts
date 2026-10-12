@@ -33,7 +33,7 @@ import AstBinary from './src/ast/AstBinary.ts'
 import AstTernary from './src/ast/AstTernary.ts'
 import VisitContext from './src/ast/VisitContext.ts'
 import StackVisitContext from './src/ast/StackVisitContext.ts'
-import Visitor, { type VisitorConstructor } from './src/ast/Visitor.ts'
+import Visitor from './src/ast/Visitor.ts'
 
 export {
     Parsem,
@@ -53,7 +53,6 @@ export {
     VisitContext,
     StackVisitContext,
     Visitor,
-    type VisitorConstructor,
     charIn,
     charNotIn,
     charInInterval,
