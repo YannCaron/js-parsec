@@ -1,11 +1,10 @@
 # js-parsec 
 
-**Js-Parsec** is another **LL(1) soon a LL(*)** parser written in TypeScript.
+**Js-Parsec** is another **PEG** parser written in TypeScript.
 
 Why another Parser in Js/Ts ? Because **Js-Parsec** embrase great emphasis to define as **simple** and **clean** grammar definition as possible.
 
 Rather than *classical* parsers that definition is frequently based on **BNF** familly languages, **Js-Parsec** is based on a **Combinator Framework** approach.
-
 
 > :bulb: Because, by definition, what is BNF, if it is not a **Domain Specific Language** ? And rather that going through the chain ```Lexer + Parser = AST```, imagine you directly write the **AST** itself with factories.
 That is the essence of Js-Parsec to be an **Embeded DSL**.
@@ -14,18 +13,18 @@ That is the essence of Js-Parsec to be an **Embeded DSL**.
 
 Install it from NPM: `npm install --save @cyann/js-parsec`
 
-> :golf: Practice it with: [grammar-lab](https://grammar.labs.cclaude.rocks/). Inspire you from the living examples, build your own BNF grammar, **copy / past** from **Js-Parsec** tab to your project and enjoy it :relaxed:!
+> :golf: Practice it with: [grammar-lab](about:blank). Take inspiration from the living examples, try it with your source code, build your own BNF grammar and **download it** from **Js-Parsec** tab. And... enjoy :relaxed:!
 >
 > the **grammar-lab** front-end:
-> [![grammar-lab](/res/img/grammar-lab.png?raw=true "grammar-lab")](http://grammar.kids-lab.io)
+> [![grammar-lab](./res/img/grammar-lab.png?raw=true "grammar-lab")](about:blank)
 > grammar-lab allow you to:
 > - [X] - write your own BNF grammar
 > - [X] - represent it in **rail-road diagram** style
-> - [X] - build your **Js-Parsec** script
+> - [X] - build your **Js-Parsec** script and download it
 > - [X] - build it into pure vanilla-js LL(1) parser
-> - [X] - Try it with the syntax color your choosen
-> - [X] - Execute your new language
-> - [X] - Draw the AST your code has given
+> - [X] - try it with the syntax color your choosen
+> - [X] - execute your new language
+> - [X] - draw the AST your code has given
 >
 > ... and much more :wink: ...
 
@@ -152,7 +151,9 @@ A.ref = sequence(A, wordIs('+'), A).or(M)
 To avoid that, you must modify the grammar to remove the left recursion by replacing it by a right recursion.
 > :bulb: Use the following replacement:
 >
-> ![grammar-lab](/res/img/left-recur-formula.png?raw=true "left resursion formula")
+> A → Aα | β ⇒  A  → βA'  
+> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A' → αA' | ε  
+
 
 As well:
 ```js
