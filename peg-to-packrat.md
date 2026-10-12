@@ -122,7 +122,7 @@ contrat public mérite une décision séparée.
 
 ### 3.1 Une production peut lire la pile créée avant la règle
 
-`Context.handleNTProduction` peut dépiler davantage de valeurs que l’expression
+`Utils.handleNTProduction` peut dépiler davantage de valeurs que l’expression
 décorée n’en a produites. C’est utilisé dans l’exemple arithmétique du README :
 `E.productNT((l, r) => l * r)` récupère aussi l’opérande gauche déjà sur la pile.
 

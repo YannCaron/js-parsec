@@ -1,24 +1,23 @@
-import { Functions, Stack, StringBuilder } from '@cyann/js-commons'
-import { Result } from './Result.ts'
+import { Stack, StringBuilder } from '@cyann/js-commons'
 import Token from './Token.ts'
 import { TokenType } from './TokenType.ts'
 
 export default class Context<T> {
 
-    private static readonly DEFAULT_TOKEN_TYPE = TokenType.PUNCTUATION
+    static readonly DEFAULT_TOKEN_TYPE = TokenType.PUNCTUATION
 
-    private readonly _src: string
-    private _pos: number
-    private readonly _builders: Stack<StringBuilder>
+    readonly _src: string
+    _pos: number
+    readonly _builders: Stack<StringBuilder>
 
-    private readonly _tokens: Array<Token>;
-    private readonly _stack: Stack<T>;
+    readonly _tokens: Array<Token>;
+    readonly _stack: Stack<T>;
 
     get pos(): number {
         return this._pos
     }
 
-    private set pos(value: number) {
+    set pos(value: number) {
         this._pos = value
     }
 
@@ -28,7 +27,7 @@ export default class Context<T> {
     }
 
     /* istanbul ignore next */
-    private get currentBuilder(): StringBuilder {
+    get currentBuilder(): StringBuilder {
         return this._builders?.last
     }
 
@@ -40,35 +39,35 @@ export default class Context<T> {
         return [...this._stack]
     }
 
-    private get builderPos(): number {
+    get builderPos(): number {
         return this.currentBuilder?.length
     }
 
-    private set builderPos(value: number) {
+    set builderPos(value: number) {
         this.currentBuilder?.splice(value)
     }
 
-    private get buildersPos(): number {
+    get buildersPos(): number {
         return this._builders.length
     }
 
-    private set buildersPos(value: number) {
+    set buildersPos(value: number) {
         this._builders.splice(value)
     }
 
-    private get tokensPos(): number {
+    get tokensPos(): number {
         return this._tokens.length
     }
 
-    private set tokensPos(value: number) {
+    set tokensPos(value: number) {
         this._tokens.splice(value)
     }
 
-    private get stackPos(): number {
+    get stackPos(): number {
         return this._stack.length
     }
 
-    private set stackPos(value: number) {
+    set stackPos(value: number) {
         this._stack.splice(value)
     }
 
@@ -116,92 +115,6 @@ export default class Context<T> {
 
     createToken(symbol: string, pos: number, type: TokenType = Context.DEFAULT_TOKEN_TYPE) {
         this._tokens.push(new Token(symbol, pos, type))
-    }
-
-    static handleBackup<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
-        const backup = {
-            pos: ctx._pos,
-            buildersPos: ctx.buildersPos,
-            builderPos: ctx.builderPos,
-            tokensPos: ctx.tokensPos,
-            stack: [...ctx._stack]
-        }
-
-        // run encapsulated lambda
-        const res = lambda(ctx)
-
-        if (res === Result.Continue && ctx.pos != backup.pos)
-            throw new Error(`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
-
-        if (res === Result.NotParsed) {
-            ctx.pos = backup.pos
-            ctx.buildersPos = backup.buildersPos
-            ctx.builderPos = backup.builderPos
-            ctx.tokensPos = backup.tokensPos
-            ctx._stack.splice(0, ctx._stack.length, ...backup.stack)
-        }
-
-        return res
-    }
-
-    static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {
-        const pos = ctx.pos
-        ctx._builders.push(new StringBuilder())
-
-        // run encapsulated lambda
-        const res = lambda(ctx)
-
-        const builder = ctx._builders.pop()
-
-        if (res !== Result.Parsed)
-            return res
-
-        if (!builder) return res
-
-        const symbol = builder.toString()
-        ctx.createToken(symbol, pos, type)
-
-        const product = (producer !== undefined) ? producer(symbol) : undefined
-        if (product !== undefined)
-            ctx._stack.push(product)
-
-        return Result.Parsed
-    }
-
-    static calculateStackDepth<T>(ctx: Context<T>, startPos: number, lambda: (...v: Array<T>) => T): number {
-        const delta = ctx.stackPos - startPos
-        const producerArgs = Functions.extractArguments(lambda)
-        if (producerArgs.length === 0) return 0 // <-- 0 argument attendu
-        const hasRest = Functions.hasRestArgument(producerArgs)
-
-        return hasRest ?
-            delta + producerArgs.length - 1 : // e.g. (c, ...rest) => {}
-            producerArgs.length // e.g. (l, r) => {}
-    }
-
-    static handleNTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
-
-        const startPos = ctx.stackPos
-
-        // run encapsulated lambda
-        const res = lambda(ctx)
-
-        if (res !== Result.Parsed || !producer)
-            return res
-
-        const args = new Array<T>()
-        let count = nbArgs !== undefined ? nbArgs : Context.calculateStackDepth(ctx, startPos, producer)
-
-        while (count > 0 && !ctx._stack.isEmpty) {
-            const value = ctx._stack.pop()
-            if (value === undefined) break
-            args.unshift(value)
-            count--
-        }
-
-        ctx._stack.push(producer(...args))
-
-        return Result.Parsed
     }
 
     /* istanbul ignore next */

@@ -1,12 +1,13 @@
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import Context from "./runtime/Context.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class Repeat<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Context.handleBackup(ctx, ctx => {
+        return Utils.handleBackup(ctx, ctx => {
             let res = Result.NotParsed
             let hasNext = ctx.current != null
             let parsedRes = this.decorated.parse(ctx)

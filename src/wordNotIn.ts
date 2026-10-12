@@ -1,6 +1,7 @@
 import Context from "./runtime/Context.ts"
 import { Parsem } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class WordNotIn<T> extends Parsem<T> {
 
@@ -12,7 +13,7 @@ class WordNotIn<T> extends Parsem<T> {
     }
 
     parseWordNotIs(ctx: Context<T>, str: string) {
-        return Context.handleBackup(ctx, ctx => {
+        return Utils.handleBackup(ctx, ctx => {
             for (const chr of str) {
                 if (!ctx.current || chr !== ctx.current)
                     return Result.NotParsed
@@ -28,7 +29,7 @@ class WordNotIn<T> extends Parsem<T> {
         if (this._strs.isEmpty) return Result.Continue
         if (ctx.current === null) return Result.NotParsed
   
-        return Context.handleBackup(ctx, ctx => {
+        return Utils.handleBackup(ctx, ctx => {
 
             for (const str of this._strs) {
                 const result = this.parseWordNotIs(ctx, str)

@@ -1,6 +1,7 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class ProductNT<T> extends ParsemDecorator<T> {
 
@@ -26,7 +27,7 @@ class ProductNT<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Context.handleNTProduction<T>(
+        return Utils.handleNTProduction<T>(
             ctx, ctx => this.decorated.parse(ctx),
             this._producer,
             this._nbArgs

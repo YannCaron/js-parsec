@@ -5,6 +5,7 @@ import {
 } from './src/Parsem.ts'
 
 import Context from './src/runtime/Context.ts'
+import Utils from './src/runtime/Utils.ts'
 import { Result } from './src/runtime/Result.ts'
 import Token from './src/runtime/Token.ts'
 import {
@@ -40,6 +41,7 @@ export {
     ParsemComposite,
     ParsemDecorator,
     Context,
+    Utils,
     Result,
     Token,
     TokenType,

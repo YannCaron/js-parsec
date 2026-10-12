@@ -1,6 +1,7 @@
 import Context from "./runtime/Context.ts"
 import { Parsem } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class WordIs<T> extends Parsem<T> {
 
@@ -14,7 +15,7 @@ class WordIs<T> extends Parsem<T> {
     parse(ctx: Context<T>): Result {
         if (this._str === '') return Result.Continue
 
-        return Context.handleBackup(ctx, ctx => {
+        return Utils.handleBackup(ctx, ctx => {
             for (const chr of this._str) {
                 if (!ctx.current || chr !== ctx.current)
                     return Result.NotParsed

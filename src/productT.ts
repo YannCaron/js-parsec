@@ -3,6 +3,7 @@ import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import { TokenType } from "./runtime/TokenType.ts"
 import Token from "./runtime/Token.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class ProductT<T> extends ParsemDecorator<T> {
 
@@ -22,7 +23,7 @@ class ProductT<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Context.handleTProduction<T>(
+        return Utils.handleTProduction<T>(
             ctx, ctx => this.decorated.parse(ctx),
             this._producer,
             this._type
