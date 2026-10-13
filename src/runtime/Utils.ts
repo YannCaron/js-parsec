@@ -57,21 +57,7 @@ export default class Utils {
     
     static handleSeedGrowing<T>(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
-        const tokenPos = ctx.pos
-        const memo = ctx.getMemo(parsem, tokenPos)
-
-        if (memo !== undefined) {
-            if (memo.pos < tokenPos) {
-                throw new Error("Corrupted memo");
-            }
-            
-            //ctx.pos = memo.pos
-            //return memo.result
-        }
-
         const res = lambda(ctx)
-
-        ctx.setMemo(parsem, tokenPos, res, ctx.pos)
 
         return res;
 
