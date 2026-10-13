@@ -1,8 +1,8 @@
 import { Stack, StringBuilder } from '@cyann/js-commons'
 import Token from './Token.ts'
 import { TokenType } from './TokenType.ts'
-import { Expression } from '../expression.ts'
 import { Result } from './Result.ts';
+import { Parsem } from '../Parsem.ts';
 
 interface MemoEntry {
     result: Result;
@@ -19,7 +19,7 @@ export default class Context<T> {
 
     readonly _tokens: Array<Token>;
     readonly _stack: Stack<T>;
-    readonly _memoizer: WeakMap<typeof Expression, Map<number, MemoEntry>>
+    readonly _memoizer: WeakMap<Parsem<T>, Map<number, MemoEntry>>
 
     get pos(): number {
         return this._pos
@@ -102,19 +102,22 @@ export default class Context<T> {
         return Array.isArray(res) ? res.first : res
     }
 
-    getMemo(clazz: typeof Expression, pos: number):MemoEntry | undefined {
-        return this._memoizer.get(clazz)?.get(pos)
+    getMemo(parsem: Parsem<T>, pos: number): MemoEntry | undefined {
+        return this._memoizer.get(parsem)?.get(pos)
     }
 
-    setMemo(clazz: typeof Expression, pos: number, entry: MemoEntry):void {
-        let position = this._memoizer.get(clazz)
+    setMemo(parsem: Parsem<T>, pos: number, result: Result, tokenPos: number): void {
+        let position = this._memoizer.get(parsem)
 
         if (!position) {
             position = new Map<number, MemoEntry>
-            this._memoizer.set(clazz, position)
+            this._memoizer.set(parsem, position)
         }
 
-        position.set(pos, entry)
+        position.set(pos, {
+            result,
+            pos: tokenPos
+        })
     }
 
     constructor(src: string) {
@@ -123,7 +126,7 @@ export default class Context<T> {
         this._builders = new Stack<StringBuilder>()
         this._tokens = new Array<Token>()
         this._stack = new Stack<T>()
-        this._memoizer = new WeakMap<typeof Expression, Map<number, MemoEntry>>();
+        this._memoizer = new WeakMap<Parsem<T>, Map<number, MemoEntry>>();
     }
 
     next() {
@@ -150,6 +153,5 @@ export default class Context<T> {
     - tokens: ${this._tokens.map(e => '\n        ' + JSON.stringify(e))}
 }`
     }
-
 
 }

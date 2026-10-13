@@ -1,13 +1,15 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
+import Utils from "./runtime/Utils.ts"
 
 class Optional<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        const res = this.decorated.parse(ctx)
-
+        const res = Utils.handlePackrat(this.decorated, ctx, 
+            ctx => this.decorated.parse(ctx))
+        
         if (res === Result.NotParsed)
             return Result.Continue
 

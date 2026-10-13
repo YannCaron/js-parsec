@@ -8,8 +8,8 @@ class Choice<T> extends ParsemComposite<T> {
     parse(ctx: Context<T>): Result {
 
         for (const child of this.children) {
-
-            if (Utils.handlePackrat<T>(Choice, ctx,
+            
+            if (Utils.handlePackrat<T>(child, ctx,
                 ctx => Utils.handleBackup<T>(ctx, 
                     ctx => child.parse(ctx))) === Result.Parsed) {
                     
