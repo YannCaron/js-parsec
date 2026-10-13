@@ -19,23 +19,25 @@ import {
 describe('development test', () => {
 
     test('non-terminal actions receive produced values in source order', () => {
-        const digit =
-            choice(
-                sequence(
-                    productT(wordIs<string>('1'), v => 'a'),
-                    productT(wordIs<string>('2'), v => 'b')
+        const parser =
+            sequence(
+                choice(
+                    sequence(
+                        productT(wordIs('1'), () => 'a'),
+                        productT(wordIs('2'), () => 'b')
+                    ),
+                    sequence(
+                        productT(wordIs('1'), () => 'c'),
+                        productT(wordIs('3'), () => 'd')
+                    )
                 ),
-                sequence(
-                    productT(wordIs<string>('1'), v => 'c'),
-                    productT(wordIs<string>('3'), v => 'd')
-                )
+                productT(wordIs('4'), () => 'e')
             )
 
-        const parser = digit
-        const ctx = new Context<string>('13')
+        const ctx = new Context('134')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['c', 'd'])
+        assert.deepStrictEqual(ctx.stack, ['c', 'd', 'e'])
     })
 
 })
