@@ -1,0 +1,509 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import {
+    Context,
+    Parsem,
+    ParsemDecorator,
+    Result,
+    Token,
+    TokenType,
+    choice,
+    expression,
+    optional,
+    productNT,
+    productT,
+    repeat,
+    sequence,
+    wordIs
+} from '../index.ts'
+
+class CountedParsem<T> extends ParsemDecorator<T> {
+
+    readonly evaluations: Array<[Context<T>, number]> = []
+    readonly budgetFailure = new Error('Test recognition evaluation budget exceeded')
+
+    constructor(decorated: Parsem<T>, private readonly budget = Infinity) {
+        super(decorated)
+    }
+
+    parse(ctx: Context<T>): Result {
+        if (this.evaluations.length >= this.budget) throw this.budgetFailure
+
+        this.evaluations.push([ctx, ctx.pos])
+
+        return this.decorated.parse(ctx)
+    }
+
+    count(ctx: Context<T>, pos: number): number {
+        return this.evaluations.filter(([context, position]) => context === ctx && position === pos).length
+    }
+
+    toString(): string {
+        return this.decorated.toString()
+    }
+}
+
+// Exercise the public parser entry point, including the Choice Packrat hook.
+function parseUnderTest<T>(parser: Parsem<T>, ctx: Context<T>): Result {
+    return parser.parse(ctx)
+}
+
+describe('Packrat recognition memoization invariants', () => {
+
+    test('a successful rule is evaluated once at an offset and replayed after rollback', () => {
+        const body = new CountedParsem(wordIs<string>('a'))
+        const rule = expression(body)
+        const parser = choice(
+            sequence(choice(rule), wordIs<string>('b')),
+            sequence(choice(rule), wordIs<string>('c'))
+        )
+        const ctx = new Context<string>('ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token('a', 0, TokenType.PUNCTUATION),
+            new Token('c', 1, TokenType.PUNCTUATION)
+        ])
+        assert.strictEqual(body.count(ctx, 0), 1, 'Successful recognition must survive alternative rollback')
+    })
+
+    test('a partially failed rule is evaluated once and leaves no replayed state', () => {
+        const body = new CountedParsem(wordIs<string>('ab'))
+        const rule = expression(body)
+        const parser = choice(rule, rule, wordIs<string>('ac'))
+        const ctx = new Context<string>('ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token('a', 0, TokenType.PUNCTUATION),
+            new Token('c', 1, TokenType.PUNCTUATION)
+        ])
+        assert.strictEqual(body.count(ctx, 0), 1, 'NotParsed must be memoized, including partial failures')
+    })
+
+    test('Continue is memoized without becoming a consuming success or a failure', () => {
+        const body = new CountedParsem(optional(wordIs<string>('z')))
+        const rule = expression(body)
+        const parser = choice(
+            sequence(optional(rule), wordIs<string>('x')),
+            sequence(optional(rule), wordIs<string>('b'))
+        )
+        const ctx = new Context<string>('b')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.strictEqual(body.count(ctx, 0), 1, 'Continue is a completed memo entry, not an absent entry')
+    })
+
+    for (const [name, terminal, expected] of [
+        ['Continue', '', Result.Continue],
+        ['NotParsed', 'a', Result.NotParsed]
+    ] as const) {
+        test(`${name} at EOF is evaluated once without advancing or producing tokens`, () => {
+            const body = new CountedParsem(wordIs<string>(terminal))
+            const rule = expression(body)
+            const parser = name === 'Continue' ? sequence(optional(rule), optional(rule)) : choice(rule, rule)
+            const ctx = new Context<string>('')
+
+            assert.strictEqual(parseUnderTest(parser, ctx), expected)
+            assert.strictEqual(ctx.pos, 0)
+            assert.strictEqual(ctx.current, null)
+            assert.deepStrictEqual(ctx.stack, [])
+            assert.deepStrictEqual(ctx.tokens, [])
+            assert.strictEqual(body.count(ctx, 0), 1, 'EOF must be a valid memo position')
+        })
+    }
+
+    for (const length of [4, 8, 12]) {
+        test(`recursive failure performs at most one rule evaluation per offset for ${length} leading characters`, () => {
+            const rule = expression<string>()
+            const recursiveCall = choice(rule)
+            const body = new CountedParsem(choice(
+                sequence(wordIs<string>('a'), recursiveCall, wordIs<string>('b')),
+                sequence(wordIs<string>('a'), recursiveCall, wordIs<string>('c')),
+                wordIs<string>('d')
+            ))
+            rule.ref = body
+
+            const ctx = new Context<string>('a'.repeat(length) + 'e')
+
+            assert.strictEqual(parseUnderTest(rule, ctx), Result.NotParsed)
+            assert.strictEqual(ctx.pos, 0)
+            assert.deepStrictEqual(ctx.stack, [])
+            assert.deepStrictEqual(ctx.tokens, [])
+            assert.ok(body.evaluations.length <= length + 1,
+                `Expected at most ${length + 1} evaluations; observed ${body.evaluations.length}`)
+
+            for (let pos = 0; pos <= length; pos++) {
+                assert.strictEqual(body.count(ctx, pos), 1, `Repeated evaluation at offset ${pos}`)
+            }
+        })
+    }
+})
+
+describe('Packrat state and semantic compatibility invariants', () => {
+
+    test('a cached production matches an equivalent grammar without rule sharing', () => {
+        const grammar = (shared: boolean) => {
+            const first = productT(wordIs<string>('a'), value => value).type(TokenType.STRING)
+            const second = shared ? first : productT(wordIs<string>('a'), value => value).type(TokenType.STRING)
+
+            return choice(
+                sequence(choice(first), wordIs<string>('b')),
+                sequence(choice(second), wordIs<string>('c'))
+            )
+        }
+        const reference = new Context<string>('ac')
+        const actual = new Context<string>('ac')
+
+        assert.strictEqual(parseUnderTest(grammar(false), reference), Result.Parsed)
+        assert.deepStrictEqual(reference.stack, ['a'])
+        assert.deepStrictEqual(reference.tokens, [
+            new Token('a', 0, TokenType.STRING),
+            new Token('c', 1, TokenType.PUNCTUATION)
+        ])
+
+        assert.strictEqual(parseUnderTest(grammar(true), actual), Result.Parsed)
+        assert.strictEqual(actual.pos, reference.pos)
+        assert.deepStrictEqual(actual.stack, reference.stack)
+        assert.deepStrictEqual(actual.tokens, reference.tokens)
+    })
+
+    test('Optional and Repeat sharing a child match an equivalent grammar with distinct children', () => {
+        const grammar = (shared: boolean) => {
+            const optionalChild = wordIs<string>('a')
+            const repeatedChild = shared ? optionalChild : wordIs<string>('a')
+
+            return choice(
+                sequence(optional(optionalChild), wordIs<string>('x')),
+                sequence(repeat(repeatedChild), wordIs<string>('a'))
+            )
+        }
+        const reference = new Context<string>('aa')
+        const actual = new Context<string>('aa')
+
+        assert.strictEqual(parseUnderTest(grammar(false), reference), Result.NotParsed)
+        assert.strictEqual(reference.pos, 0)
+        assert.deepStrictEqual(reference.stack, [])
+        assert.deepStrictEqual(reference.tokens, [])
+
+        assert.strictEqual(parseUnderTest(grammar(true), actual), Result.NotParsed)
+        assert.strictEqual(actual.pos, reference.pos)
+        assert.deepStrictEqual(actual.stack, reference.stack)
+        assert.deepStrictEqual(actual.tokens, reference.tokens)
+    })
+
+    test('ordered choice still tries the following alternative after Continue', () => {
+        const nullable = expression(wordIs<string>(''))
+        const parser = choice(nullable, wordIs<string>('b'))
+        const ctx = new Context<string>('b')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+    })
+
+    test('reused Continue productions execute no callbacks and produce no tokens or values', () => {
+        const calls: string[] = []
+        const terminal = productT(wordIs<string>(''), value => {
+            calls.push('terminal')
+
+            return value
+        })
+        const rule = expression(productNT<string>(terminal, () => {
+            calls.push('non-terminal')
+
+            return 'unexpected'
+        }))
+        const ctx = new Context<string>('b')
+
+        assert.strictEqual(parseUnderTest(sequence(optional(rule), optional(rule), wordIs<string>('b')), ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(calls, [])
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+    })
+
+    test('different rule identities with the same text do not share semantic results', () => {
+        const first = expression(productT(wordIs<string>('a'), () => 'first').type(TokenType.STRING))
+        const second = expression(productT(wordIs<string>('a'), () => 'second').type(TokenType.STRING))
+        const parser = choice(
+            sequence(choice(first), wordIs<string>('b')),
+            sequence(choice(second), wordIs<string>('c'))
+        )
+        const ctx = new Context<string>('ac')
+
+        assert.strictEqual(first.toString(), second.toString())
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.result, 'second')
+        assert.strictEqual(ctx.pos, 2)
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token('a', 0, TokenType.STRING),
+            new Token('c', 1, TokenType.PUNCTUATION)
+        ])
+    })
+
+    test('different Choice instances at the same offset keep their own alternatives', () => {
+        const first = choice(wordIs<string>('a'), wordIs<string>('b'))
+        const second = choice(wordIs<string>('a'), wordIs<string>('c'))
+        const parser = choice(sequence(first, wordIs<string>('x')), second)
+        const ctx = new Context<string>('c')
+
+        assert.strictEqual(first.constructor, second.constructor)
+        assert.notStrictEqual(first, second)
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.result, [])
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(ctx.tokens, [new Token('c', 0, TokenType.PUNCTUATION)])
+    })
+
+    test('the same rule at different offsets preserves each occurrence and token position', () => {
+        const rule = choice(expression(productT(
+            choice(wordIs<string>('a'), wordIs<string>('b')),
+            value => value
+        ).type(TokenType.STRING)))
+        const ctx = new Context<string>('ab')
+
+        assert.strictEqual(parseUnderTest(sequence(rule, rule), ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        assert.deepStrictEqual(ctx.result, ['a', 'b'])
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token('a', 0, TokenType.STRING),
+            new Token('b', 1, TokenType.STRING)
+        ])
+    })
+
+    test('successes and failures do not leak between sources or fresh contexts', () => {
+        const body = new CountedParsem(wordIs<string>('a'))
+        const rule = choice(expression(body))
+        const first = new Context<string>('a')
+        const failed = new Context<string>('b')
+        const last = new Context<string>('a')
+
+        assert.strictEqual(parseUnderTest(rule, first), Result.Parsed)
+        assert.strictEqual(parseUnderTest(rule, failed), Result.NotParsed)
+        assert.strictEqual(parseUnderTest(rule, last), Result.Parsed)
+        assert.strictEqual(first.pos, 1)
+        assert.strictEqual(failed.pos, 0)
+        assert.strictEqual(last.pos, 1)
+        assert.deepStrictEqual(failed.tokens, [])
+        assert.deepStrictEqual(first.tokens, last.tokens)
+        assert.strictEqual(body.count(first, 0), 1)
+        assert.strictEqual(body.count(failed, 0), 1)
+        assert.strictEqual(body.count(last, 0), 1)
+    })
+
+    test('a changed expression reference is respected in a new context', () => {
+        const rule = expression(wordIs<string>('a'))
+        const parser = choice(rule)
+        const first = new Context<string>('a')
+
+        assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
+        rule.ref = wordIs<string>('b')
+
+        const second = new Context<string>('b')
+        const oldSource = new Context<string>('a')
+
+        assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
+        assert.strictEqual(parseUnderTest(parser, oldSource), Result.NotParsed)
+        assert.deepStrictEqual(second.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.strictEqual(oldSource.pos, 0)
+        assert.deepStrictEqual(oldSource.tokens, [])
+    })
+
+    test('a shared reduction uses the current preceding stack, not the first alternative snapshot', () => {
+        const letter = productT(wordIs<unknown>('a'), value => value).type(TokenType.STRING)
+        const rule = choice(expression(productNT(letter, (left, right) => `${left}${right}`, 2)))
+        const parser = choice(
+            sequence(productT(wordIs<unknown>('1'), () => 1).type(TokenType.NUMBER), rule, wordIs<unknown>('b')),
+            sequence(productT(wordIs<unknown>('1'), () => 2).type(TokenType.NUMBER), rule, wordIs<unknown>('c'))
+        )
+        const ctx = new Context<unknown>('1ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 3)
+        assert.strictEqual(ctx.result, '2a')
+        assert.deepStrictEqual(ctx.tokens, [
+            new Token('1', 0, TokenType.NUMBER),
+            new Token('a', 1, TokenType.STRING),
+            new Token('c', 2, TokenType.PUNCTUATION)
+        ])
+    })
+
+    for (const capturedFirst of [false, true]) {
+        test(`a shared recognition respects the active terminal builder when capture is ${capturedFirst ? 'abandoned' : 'selected'}`, () => {
+            const rule = choice(expression(wordIs<string>('a')))
+            const captured = productT(rule, value => value).type(TokenType.STRING)
+            const parser = choice(
+                sequence(capturedFirst ? captured : rule, wordIs<string>('b')),
+                sequence(capturedFirst ? rule : captured, wordIs<string>('c'))
+            )
+            const ctx = new Context<string>('ac')
+
+            assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+            assert.strictEqual(ctx.pos, 2)
+            assert.deepStrictEqual(ctx.stack, capturedFirst ? [] : ['a'])
+            assert.deepStrictEqual(ctx.tokens, [
+                new Token('a', 0, capturedFirst ? TokenType.PUNCTUATION : TokenType.STRING),
+                new Token('c', 1, TokenType.PUNCTUATION)
+            ])
+        })
+    }
+
+    test('an enclosing capture receives only the selected characters after rollback', () => {
+        const rule = choice(expression(wordIs<string>('a')))
+        const parser = productT(choice(
+            sequence(rule, wordIs<string>('b')),
+            sequence(rule, wordIs<string>('c'))
+        ), value => value).type(TokenType.STRING)
+        const ctx = new Context<string>('ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.result, 'ac')
+        assert.deepStrictEqual(ctx.tokens, [new Token('ac', 0, TokenType.STRING)])
+    })
+
+    for (const [name, value] of [
+        ['zero', 0],
+        ['false', false],
+        ['empty string', ''],
+        ['null', null]
+    ] as const) {
+        test(`a shared terminal production preserves ${name} after rollback`, () => {
+            const rule = choice(expression(productT(wordIs<unknown>('a'), () => value)))
+            const parser = choice(
+                sequence(rule, wordIs<unknown>('b')),
+                sequence(rule, wordIs<unknown>('c'))
+            )
+            const ctx = new Context<unknown>('ac')
+
+            assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+            assert.strictEqual(ctx.pos, 2)
+            assert.deepStrictEqual(ctx.stack, [value])
+            assert.strictEqual(ctx.result, value)
+        })
+    }
+
+    test('rest arguments consume only values produced inside the reused reduction', () => {
+        const pair = choice(expression(productNT(sequence(
+            productT(wordIs<unknown>('a'), value => value),
+            productT(wordIs<unknown>('b'), value => value)
+        ), (...values) => values)))
+        const parser = sequence(
+            productT(wordIs<unknown>('1'), () => 1),
+            choice(sequence(pair, wordIs<unknown>('x')), sequence(pair, wordIs<unknown>('c')))
+        )
+        const ctx = new Context<unknown>('1abc')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 4)
+        assert.deepStrictEqual(ctx.result, [1, ['a', 'b']])
+    })
+
+    test('a zero-argument reduction leaves preceding values on the stack', () => {
+        const rule = choice(expression(productNT<unknown>(wordIs<unknown>('a'), () => 'constant')))
+        const parser = sequence(
+            productT(wordIs<unknown>('1'), () => 1),
+            choice(sequence(rule, wordIs<unknown>('b')), sequence(rule, wordIs<unknown>('c')))
+        )
+        const ctx = new Context<unknown>('1ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.deepStrictEqual(ctx.result, [1, 'constant'])
+    })
+
+    test('produced objects belong to separate occurrences and parse contexts', () => {
+        const rule = choice(expression(productT(wordIs<{ value: string }>('a'), value => ({ value }))))
+        const parser = sequence(rule, rule)
+        const first = new Context<{ value: string }>('aa')
+        const second = new Context<{ value: string }>('aa')
+
+        assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
+        const [left, right] = first.stack
+        assert.notStrictEqual(left, right)
+        left.value = 'changed'
+        assert.strictEqual(right.value, 'a')
+
+        assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
+        assert.deepStrictEqual(second.stack, [{ value: 'a' }, { value: 'a' }])
+        assert.notStrictEqual(first.stack[0], second.stack[0])
+    })
+
+    test('produced closures preserve identity and remain callable after rollback', () => {
+        const callback = () => 42
+        const rule = choice(expression(productT(wordIs<() => number>('a'), () => callback)))
+        const parser = choice(
+            sequence(rule, wordIs<() => number>('b')),
+            sequence(rule, wordIs<() => number>('c'))
+        )
+        const ctx = new Context<() => number>('ac')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.uniqueResult, callback)
+        assert.strictEqual(ctx.uniqueResult(), 42)
+    })
+
+    test('an exception remains fatal and does not poison a fresh parse context', () => {
+        const failure = new Error('semantic production failed')
+        let shouldThrow = true
+        const rule = choice(expression(productT(wordIs<string>('a'), value => {
+            if (shouldThrow) throw failure
+
+            return value
+        }).type(TokenType.STRING)))
+
+        assert.throws(() => parseUnderTest(rule, new Context<string>('a')), (error: unknown) => error === failure)
+        shouldThrow = false
+        const ctx = new Context<string>('a')
+
+        assert.strictEqual(parseUnderTest(rule, ctx), Result.Parsed)
+        assert.strictEqual(ctx.result, 'a')
+        assert.deepStrictEqual(ctx.tokens, [new Token('a', 0, TokenType.STRING)])
+    })
+
+    test('memoization must not turn a successful prefix into a complete parse', () => {
+        const rule = choice(expression(wordIs<string>('a')))
+        const parser = choice(
+            sequence(rule, wordIs<string>('b')),
+            sequence(rule, wordIs<string>('c'))
+        )
+        const ctx = new Context<string>('ac!')
+
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.current, '!')
+        assert.throws(() => ctx.result, /Source not completelly parsed/)
+    })
+})
+
+describe('Packrat recursive cycle invariants', () => {
+
+    for (const indirect of [false, true]) {
+        test(`${indirect ? 'indirect' : 'direct'} recursion without progress has an engine diagnostic before the test budget is exhausted`, () => {
+            const first = expression<string>()
+            const second = expression<string>()
+            const body = new CountedParsem(first, 32)
+            first.ref = indirect ? second : body
+            if (indirect) second.ref = body
+
+            const ctx = new Context<string>('x')
+
+            assert.throws(() => parseUnderTest(first, ctx), (error: unknown) =>
+                error instanceof Error &&
+                error !== body.budgetFailure &&
+                !(error instanceof RangeError) &&
+                /cycle|left.recurs|recurs.*progress/i.test(error.message)
+            )
+            assert.strictEqual(ctx.pos, 0)
+            assert.deepStrictEqual(ctx.stack, [])
+            assert.deepStrictEqual(ctx.tokens, [])
+        })
+    }
+})

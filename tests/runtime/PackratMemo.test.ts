@@ -1,0 +1,280 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
+
+describe('Packrat memo table invariants', () => {
+
+    test('a missing memo entry is distinct from all completed statuses', () => {
+        const ctx = new Context<string>('a')
+        const parsem = expression<string>(wordIs<string>('a'))
+
+        assert.strictEqual(ctx.getMemo(parsem, 0), undefined)
+        assert.strictEqual(ctx.getMemo(parsem, 1), undefined)
+    })
+
+    for (const result of [Result.Parsed, Result.NotParsed, Result.Continue]) {
+        test(`the memo table retains ${result} without changing the parsing state`, () => {
+            const ctx = new Context<string>('a')
+            const parsem = expression<string>(wordIs<string>('a'))
+            const entry = { result, pos: result === Result.Parsed ? 1 : 0 }
+
+            ctx.setMemo(parsem, 0, entry.result, entry.pos)
+
+            assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
+            assert.strictEqual(ctx.pos, 0)
+            assert.deepStrictEqual(ctx.tokens, [])
+            assert.deepStrictEqual(ctx.stack, [])
+            assert.strictEqual(ctx.buildersPos, 0)
+        })
+    }
+
+    test('memo entries at different positions and under different keys stay independent', () => {
+        const ctx = new Context<string>('ab')
+        const parsem = expression<string>(wordIs<string>('a'))
+        const otherParsem = expression<string>(wordIs<string>('a'))
+        const first = { result: Result.Parsed, pos: 1 }
+        const second = { result: Result.NotParsed, pos: 1 }
+        const other = { result: Result.Continue, pos: 0 }
+
+        assert.strictEqual(parsem.constructor, otherParsem.constructor)
+        assert.strictEqual(parsem.toString(), otherParsem.toString())
+        assert.notStrictEqual(parsem, otherParsem)
+
+        ctx.setMemo(parsem, 0, first.result, first.pos)
+        ctx.setMemo(parsem, 1, second.result, second.pos)
+        ctx.setMemo(otherParsem, 0, other.result, other.pos)
+
+        assert.deepStrictEqual(ctx.getMemo(parsem, 0), first)
+        assert.deepStrictEqual(ctx.getMemo(parsem, 1), second)
+        assert.deepStrictEqual(ctx.getMemo(otherParsem, 0), other)
+        assert.strictEqual(ctx.getMemo(otherParsem, 1), undefined)
+    })
+
+    test('replacing one memo entry preserves neighboring positions and keys', () => {
+        const ctx = new Context<string>('ab')
+        const parsem = expression<string>(wordIs<string>('a'))
+        const otherParsem = expression<string>(wordIs<string>('a'))
+        const neighbor = { result: Result.Continue, pos: 1 }
+        const other = { result: Result.NotParsed, pos: 0 }
+        const replacement = { result: Result.NotParsed, pos: 0 }
+        ctx.setMemo(parsem, 0, Result.Parsed, 1)
+        ctx.setMemo(parsem, 1, neighbor.result, neighbor.pos)
+        ctx.setMemo(otherParsem, 0, other.result, other.pos)
+
+        ctx.setMemo(parsem, 0, replacement.result, replacement.pos)
+
+        assert.deepStrictEqual(ctx.getMemo(parsem, 0), replacement)
+        assert.deepStrictEqual(ctx.getMemo(parsem, 1), neighbor)
+        assert.deepStrictEqual(ctx.getMemo(otherParsem, 0), other)
+    })
+
+    test('memo entries do not leak into another context, even with the same source', () => {
+        const first = new Context<string>('a')
+        const sameSource = new Context<string>('a')
+        const otherSource = new Context<string>('b')
+        const parsem = expression<string>(wordIs<string>('a'))
+        const success = { result: Result.Parsed, pos: 1 }
+        first.setMemo(parsem, 0, success.result, success.pos)
+
+        assert.strictEqual(sameSource.getMemo(parsem, 0), undefined)
+        assert.strictEqual(otherSource.getMemo(parsem, 0), undefined)
+        otherSource.setMemo(parsem, 0, Result.NotParsed, 0)
+        assert.deepStrictEqual(first.getMemo(parsem, 0), success)
+        assert.strictEqual(sameSource.getMemo(parsem, 0), undefined)
+    })
+
+    test('EOF is a valid memo position, including position zero in empty input', () => {
+        for (const source of ['', 'a']) {
+            const ctx = new Context<string>(source)
+            const parsem = expression<string>(wordIs<string>('a'))
+            ctx.pos = source.length
+            const entry = { result: Result.Continue, pos: source.length }
+
+            ctx.setMemo(parsem, ctx.pos, entry.result, entry.pos)
+
+            assert.deepStrictEqual(ctx.getMemo(parsem, ctx.pos), entry)
+            assert.strictEqual(ctx.current, null)
+            assert.strictEqual(ctx.pos, source.length)
+            assert.deepStrictEqual(ctx.tokens, [])
+            assert.deepStrictEqual(ctx.stack, [])
+        }
+    })
+
+    test('alternative rollback restores parsing state while retaining recognition entries', () => {
+        const ctx = new Context<string>('a')
+        const parsem = expression<string>(wordIs<string>('a'))
+        const entry = { result: Result.Parsed, pos: 1 }
+
+        const result = Utils.handleBackup(ctx, current => {
+            current.next()
+            current._stack.push('discarded')
+            current.setMemo(parsem, 0, entry.result, entry.pos)
+
+            return Result.NotParsed
+        })
+
+        assert.strictEqual(result, Result.NotParsed)
+        assert.strictEqual(ctx.pos, 0)
+        assert.deepStrictEqual(ctx.tokens, [])
+        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
+    })
+
+    test('memo access leaves an active capture and preceding semantic values intact', () => {
+        const ctx = new Context<string>('ab')
+        const parsem = expression<string>(wordIs<string>('a'))
+        ctx._stack.push('prefix')
+        const entry = { result: Result.Parsed, pos: 1 }
+
+        const result = Utils.handleTProduction(ctx, current => {
+            current.next()
+            current.setMemo(parsem, 0, entry.result, entry.pos)
+
+            assert.deepStrictEqual(current.getMemo(parsem, 0), entry)
+            assert.strictEqual(current.pos, 1)
+            assert.strictEqual(current.buildersPos, 1)
+            assert.strictEqual(current.builderPos, 1)
+            assert.deepStrictEqual(current.stack, ['prefix'])
+            assert.deepStrictEqual(current.tokens, [])
+            current.next()
+
+            return Result.Parsed
+        }, value => value, TokenType.STRING)
+
+        assert.strictEqual(result, Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        assert.deepStrictEqual(ctx.result, ['prefix', 'ab'])
+        assert.deepStrictEqual(ctx.tokens, [new Token('ab', 0, TokenType.STRING)])
+        assert.strictEqual(ctx.buildersPos, 0)
+    })
+})
+
+describe('Packrat helper integration invariants', () => {
+
+    for (const expected of [Result.Parsed, Result.NotParsed, Result.Continue]) {
+        test(`handlePackrat caches ${expected} and restores its final position without evaluating twice`, () => {
+            const ctx = new Context<string>('a')
+            const parsem = expression<string>(wordIs<string>('a'))
+            const finalPos = expected === Result.Parsed ? 1 : 0
+            let calls = 0
+
+            const evaluate = (current: Context<string>) => {
+                calls++
+                if (expected === Result.Parsed) current.next()
+
+                return expected
+            }
+
+            const result = Utils.handlePackrat(parsem, ctx, evaluate)
+
+            assert.strictEqual(result, expected)
+            assert.strictEqual(calls, 1)
+            assert.strictEqual(ctx.pos, finalPos)
+            assert.deepStrictEqual(ctx.getMemo(parsem, 0), {
+                result: expected,
+                pos: finalPos
+            })
+
+            ctx.pos = 0
+            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected)
+            assert.strictEqual(calls, 1)
+            assert.strictEqual(ctx.pos, finalPos)
+        })
+    }
+
+    test('cache misses distinguish parser instances and starting positions', () => {
+        const ctx = new Context<string>('aa')
+        const first = expression<string>(wordIs<string>('a'))
+        const second = expression<string>(wordIs<string>('a'))
+        let calls = 0
+        const evaluate = (current: Context<string>) => {
+            calls++
+            return wordIs<string>('a').parse(current)
+        }
+
+        assert.strictEqual(first.constructor, second.constructor)
+        assert.strictEqual(first.toString(), second.toString())
+        assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.pos, 2)
+        ctx.pos = 0
+        assert.strictEqual(Utils.handlePackrat(second, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(calls, 3)
+
+        for (const [parsem, startPos] of [[first, 0], [first, 1], [second, 0]] as const) {
+            ctx.pos = startPos
+            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), Result.Parsed)
+            assert.strictEqual(ctx.pos, startPos + 1)
+        }
+        assert.strictEqual(calls, 3)
+    })
+
+    test('the same parser is evaluated separately in every context', () => {
+        const parsem = expression<string>(wordIs<string>('a'))
+        const contexts = [new Context<string>('a'), new Context<string>('a'), new Context<string>('b')]
+        const expected = [Result.Parsed, Result.Parsed, Result.NotParsed]
+        let calls = 0
+        const evaluate = (current: Context<string>) => {
+            calls++
+            return parsem.parse(current)
+        }
+
+        contexts.forEach((ctx, index) => {
+            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
+            assert.strictEqual(ctx.pos, expected[index] === Result.Parsed ? 1 : 0)
+        })
+        assert.strictEqual(calls, contexts.length)
+
+        contexts.forEach((ctx, index) => {
+            ctx.pos = 0
+            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
+            assert.strictEqual(ctx.pos, expected[index] === Result.Parsed ? 1 : 0)
+        })
+        assert.strictEqual(calls, contexts.length)
+    })
+
+    test('an evaluation that throws does not create a completed memo entry', () => {
+        const ctx = new Context<string>('a')
+        const parsem = expression<string>(wordIs<string>('a'))
+        const failure = new Error('producer failed')
+        let calls = 0
+
+        assert.throws(() => Utils.handlePackrat(parsem, ctx, current => {
+            calls++
+            current.next()
+            throw failure
+        }), error => error === failure)
+        assert.strictEqual(calls, 1)
+        assert.strictEqual(ctx.getMemo(parsem, 0), undefined)
+
+        ctx.pos = 0
+        assert.strictEqual(Utils.handlePackrat(parsem, ctx, current => {
+            calls++
+            return parsem.parse(current)
+        }), Result.Parsed)
+        assert.strictEqual(calls, 2)
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(ctx.getMemo(parsem, 0), { result: Result.Parsed, pos: 1 })
+    })
+
+    test('a memo entry ending before its starting position is rejected without rewinding', () => {
+        const ctx = new Context<string>('ab')
+        const parsem = expression<string>(wordIs<string>('a'))
+        ctx.next()
+        ctx._stack.push('prefix')
+        ctx.setMemo(parsem, 1, Result.Parsed, 0)
+        const tokens = ctx.tokens
+        let calls = 0
+
+        assert.throws(() => Utils.handlePackrat(parsem, ctx, () => {
+            calls++
+            return Result.Parsed
+        }), /Corrupted memo/)
+        assert.strictEqual(calls, 0)
+        assert.strictEqual(ctx.pos, 1)
+        assert.deepStrictEqual(ctx.tokens, tokens)
+        assert.deepStrictEqual(ctx.stack, ['prefix'])
+    })
+})

@@ -2,7 +2,7 @@ import { Stack, StringBuilder } from '@cyann/js-commons'
 import Token from './Token.ts'
 import { TokenType } from './TokenType.ts'
 import { Result } from './Result.ts';
-import { Parsem } from '../Parsem.ts';
+import type { Parsem } from '../Parsem.ts';
 
 interface MemoEntry {
     result: Result;

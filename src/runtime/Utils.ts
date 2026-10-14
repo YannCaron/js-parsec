@@ -55,7 +55,7 @@ export default class Utils {
     }
 
     
-    static handleSeedGrowing<T>(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+    static handleSeedGrowing<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         const res = lambda(ctx)
 
