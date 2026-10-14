@@ -357,8 +357,21 @@ Aucune nouvelle dépendance n’est nécessaire pour commencer.
 
 ## 8. Tests à ajouter avant d’annoncer Packrat
 
-Créer `tests/PackratInvariants.test.ts` et conserver `PEGInvariants.test.ts`
-comme référence du comportement actuel.
+La suite [PackratInvariants.test.ts](tests/PackratInvariants.test.ts) couvre
+désormais les contrats de mémoïsation, les cycles sans progression et la
+compatibilité de l'état observable. Elle sollicite les points de cache réels
+et compare aussi des grammaires avec et sans partage de règles.
+[tests/README.md](tests/README.md) précise leur exécution et leur portée.
+`PEGInvariants.test.ts` reste la référence du comportement actuel.
+
+Dans le commit `100107a`, `Context.getMemo`/`setMemo` utilisent l'identité des
+instances et `Utils.handlePackrat` consulte et alimente effectivement cette
+table. [PackratMemo.test.ts](tests/runtime/PackratMemo.test.ts) vérifie cette
+API. Le rejeu ne restaure encore que position et statut : les invariants
+exposent des pertes de tokens, captures et valeurs. Ils détectent aussi une
+collision entre l'optionnel et la répétition d'un même enfant.
+`handleSeedGrowing` reste préparatoire ; les diagnostics de cycles demeurent
+des contrats à satisfaire.
 
 | Famille | Vérifications |
 | --- | --- |
