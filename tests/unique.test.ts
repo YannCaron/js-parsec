@@ -16,28 +16,26 @@ import {
     wordIs
 } from '../index.ts'
 
+function parseUnderTest<T>(parser: Parsem<T>, ctx: Context<T>): Result {
+    return parser.parse(ctx)
+}
+
 describe('development test', () => {
 
-    test('non-terminal actions receive produced values in source order', () => {
-        const parser =
-            sequence(
-                choice(
-                    sequence(
-                        productT(wordIs('1'), () => 'a'),
-                        productT(wordIs('2'), () => 'b')
-                    ),
-                    sequence(
-                        productT(wordIs('1'), () => 'c'),
-                        productT(wordIs('3'), () => 'd')
-                    )
-                ),
-                productT(wordIs('4'), () => 'e')
-            )
+    test('unique test', () => {
+        const pair = choice(expression(productNT(sequence(
+            productT(wordIs<unknown>('a'), value => value),
+            productT(wordIs<unknown>('b'), value => value)
+        ), (...values) => values)))
+        const parser = sequence(
+            productT(wordIs<unknown>('1'), () => 1),
+            choice(sequence(pair, wordIs<unknown>('x')), sequence(pair, wordIs<unknown>('c')))
+        )
+        const ctx = new Context<unknown>('1abc')
 
-        const ctx = new Context('134')
-
-        assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['c', 'd', 'e'])
+        assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
+        assert.strictEqual(ctx.pos, 4)
+        assert.deepStrictEqual(ctx.result, [1, ['a', 'b']])
     })
 
 })

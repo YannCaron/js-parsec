@@ -1,8 +1,9 @@
 import { Functions, StringBuilder } from "@cyann/js-commons"
-import Context from "./Context.ts"
+import Context, { ProductTransaction, TokenTransaction, Transaction } from "./Context.ts"
 import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
+import Token from "./Token.ts"
 
 export default class Utils {
 
@@ -12,7 +13,7 @@ export default class Utils {
             buildersPos: ctx.buildersPos,
             builderPos: ctx.builderPos,
             tokensPos: ctx.tokensPos,
-            stack: [...ctx._stack]
+            stack: ctx.stack
         }
 
         // run encapsulated lambda
@@ -41,20 +42,40 @@ export default class Utils {
             if (memo.pos < tokenPos) {
                 throw new Error("Corrupted memo");
             }
-            
+
+            //ctx._stack.push(['a', 'b'] as T)
+            if (memo.result === Result.Parsed)
+                for (let tr of memo.transactions) {
+                    tr.apply(ctx)
+                }
+            console.log('restore memo', ctx.pos, memo.result, ctx.stack);
+
             ctx.pos = memo.pos
             return memo.result
         }
 
+        ctx._recordDeep++
+        const startPos = ctx._transactionStack.length - 1
+
         const res = lambda(ctx)
 
-        ctx.setMemo(parsem, tokenPos, res, ctx.pos)
+        const trs: Transaction<T>[] = ctx._transactionStack.splice(startPos)
+        ctx._recordDeep--
+
+        console.log('store memo', ctx.pos, res, ctx._stack);
+        console.log(trs);
+
+        ctx.setMemo(parsem, tokenPos, {
+            result: res,
+            pos: ctx.pos,
+            transactions: trs
+        })
 
         return res;
 
     }
 
-    
+
     static handleSeedGrowing<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         const res = lambda(ctx)
@@ -78,11 +99,17 @@ export default class Utils {
         if (!builder) return res
 
         const symbol = builder.toString()
-        ctx.createToken(symbol, pos, type)
+        const token = new Token(symbol, pos, type);
+
+        ctx.appendToken(token)
+        if (ctx._recordDeep > 0)
+            ctx._transactionStack.push(new TokenTransaction<T>(token))
 
         const product = (producer !== undefined) ? producer(symbol) : undefined
-        if (product !== undefined)
+        if (product !== undefined) {
             ctx._stack.push(product)
+            ctx._transactionStack.push(new ProductTransaction<T>(product))
+        }
 
         return Result.Parsed
     }

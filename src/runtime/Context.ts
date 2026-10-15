@@ -3,10 +3,12 @@ import Token from './Token.ts'
 import { TokenType } from './TokenType.ts'
 import { Result } from './Result.ts';
 import type { Parsem } from '../Parsem.ts';
+import { Transaction } from './TransactionManager.ts';
 
-interface MemoEntry {
+interface MemoEntry<T> {
     result: Result;
     pos: number;
+    transactions: Transaction<T>[]
 }
 
 export default class Context<T> {
@@ -15,11 +17,12 @@ export default class Context<T> {
 
     readonly _src: string
     _pos: number
+    _recordDeep: number = 0
     readonly _builders: Stack<StringBuilder>
 
     readonly _tokens: Array<Token>;
-    readonly _stack: Stack<T>;
-    readonly _memoizer: WeakMap<Parsem<T>, Map<number, MemoEntry>>
+    readonly _stack: Stack<T | T[]>;
+    readonly _memoizer: WeakMap<Parsem<T>, Map<number, MemoEntry<T>>>
 
     get pos(): number {
         return this._pos
@@ -43,7 +46,7 @@ export default class Context<T> {
         return [...this._tokens]
     }
 
-    get stack(): Array<T> {
+    get stack(): Array<T | T[]> {
         return [...this._stack]
     }
 
@@ -102,22 +105,19 @@ export default class Context<T> {
         return Array.isArray(res) ? res.first : res
     }
 
-    getMemo(parsem: Parsem<T>, pos: number): MemoEntry | undefined {
+    getMemo(parsem: Parsem<T>, pos: number): MemoEntry<T> | undefined {
         return this._memoizer.get(parsem)?.get(pos)
     }
 
-    setMemo(parsem: Parsem<T>, pos: number, result: Result, tokenPos: number): void {
+    setMemo(parsem: Parsem<T>, pos: number, entry: MemoEntry<T>): void {
         let position = this._memoizer.get(parsem)
 
         if (!position) {
-            position = new Map<number, MemoEntry>
+            position = new Map<number, MemoEntry<T>>
             this._memoizer.set(parsem, position)
         }
 
-        position.set(pos, {
-            result,
-            pos: tokenPos
-        })
+        position.set(pos, entry)
     }
 
     constructor(src: string) {
@@ -126,7 +126,7 @@ export default class Context<T> {
         this._builders = new Stack<StringBuilder>()
         this._tokens = new Array<Token>()
         this._stack = new Stack<T>()
-        this._memoizer = new WeakMap<Parsem<T>, Map<number, MemoEntry>>();
+        this._memoizer = new WeakMap<Parsem<T>, Map<number, MemoEntry<T>>>();
     }
 
     next() {
@@ -141,7 +141,11 @@ export default class Context<T> {
     }
 
     createToken(symbol: string, pos: number, type: TokenType = Context.DEFAULT_TOKEN_TYPE) {
-        this._tokens.push(new Token(symbol, pos, type))
+        this.appendToken(new Token(symbol, pos, type))
+    }
+
+    appendToken(token: Token) {
+        this._tokens.push(token)
     }
 
     /* istanbul ignore next */
