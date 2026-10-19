@@ -5,6 +5,10 @@ import {
 } from './src/Parsem.ts'
 
 import Context from './src/runtime/Context.ts'
+import SourceManager from './src/runtime/SourceManager.ts'
+import TokenManager from './src/runtime/TokenManager.ts'
+import BuilderManager from './src/runtime/BuilderManager.ts'
+import ProductionManager from './src/runtime/ProductionManager.ts'
 import Utils from './src/runtime/Utils.ts'
 import { Result } from './src/runtime/Result.ts'
 import Token from './src/runtime/Token.ts'
@@ -41,6 +45,10 @@ export {
     ParsemComposite,
     ParsemDecorator,
     Context,
+    SourceManager,
+    TokenManager,
+    BuilderManager,
+    ProductionManager,
     Utils,
     Result,
     Token,

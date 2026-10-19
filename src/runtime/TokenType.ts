@@ -13,7 +13,8 @@ enum TokenType {
     KEYWORD = 'keyword',
     FUNCTION = 'function',
     REGEX = 'regex',
-    VARIABLE = 'variable'
+    VARIABLE = 'variable',
+    DEFAULT = PUNCTUATION
 }
 
 function getKeyOf(value: string):string {

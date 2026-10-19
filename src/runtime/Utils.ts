@@ -1,5 +1,5 @@
-import { Functions, StringBuilder } from "@cyann/js-commons"
-import Context, { ProductTransaction, TokenTransaction, Transaction } from "./Context.ts"
+import Context from "./Context.ts"
+import { ProductTransaction, TokenTransaction, Transaction } from "./TransactionManager.ts"
 import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
@@ -9,11 +9,11 @@ export default class Utils {
 
     static handleBackup<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
         const backup = {
-            pos: ctx._pos,
-            buildersPos: ctx.buildersPos,
-            builderPos: ctx.builderPos,
-            tokensPos: ctx.tokensPos,
-            stack: ctx.stack
+            pos: ctx.sourceManager.pos,
+            buildersPos: ctx.builderManager.pos,
+            builderPos: ctx.builderManager.builderPos,
+            tokensPos: ctx.tokenManager.pos,
+            stack: ctx.productionManager.stack
         }
 
         // run encapsulated lambda
@@ -23,17 +23,19 @@ export default class Utils {
             throw new Error(`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
 
         if (res === Result.NotParsed) {
-            ctx.pos = backup.pos
-            ctx.buildersPos = backup.buildersPos
-            ctx.builderPos = backup.builderPos
-            ctx.tokensPos = backup.tokensPos
-            ctx._stack.splice(0, ctx._stack.length, ...backup.stack)
+            ctx.sourceManager.pos = backup.pos
+            ctx.builderManager.pos = backup.buildersPos
+            ctx.builderManager.builderPos = backup.builderPos
+            ctx.tokenManager.pos = backup.tokensPos
+            ctx.productionManager.restore(backup.stack)
         }
 
         return res
     }
 
     static handlePackrat<T>(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+
+        return lambda(ctx)
 
         const tokenPos = ctx.pos
         const memo = ctx.getMemo(parsem, tokenPos)
@@ -86,12 +88,12 @@ export default class Utils {
 
     static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {
         const pos = ctx.pos
-        ctx._builders.push(new StringBuilder())
+        ctx.builderManager.create()
 
         // run encapsulated lambda
         const res = lambda(ctx)
 
-        const builder = ctx._builders.pop()
+        const builder = ctx.builderManager.consume()
 
         if (res !== Result.Parsed)
             return res
@@ -101,33 +103,26 @@ export default class Utils {
         const symbol = builder.toString()
         const token = new Token(symbol, pos, type);
 
-        ctx.appendToken(token)
-        if (ctx._recordDeep > 0)
-            ctx._transactionStack.push(new TokenTransaction<T>(token))
+        ctx.tokenManager.append(token)
+        //if (ctx._recordDeep > 0)
+        //    ctx._transactionStack.push(new TokenTransaction<T>(token))
 
         const product = (producer !== undefined) ? producer(symbol) : undefined
         if (product !== undefined) {
-            ctx._stack.push(product)
-            ctx._transactionStack.push(new ProductTransaction<T>(product))
+            ctx.productionManager.append(product)
+            //ctx._transactionStack.push(new ProductTransaction<T>(product))
         }
 
         return Result.Parsed
     }
 
     static calculateStackDepth<T>(ctx: Context<T>, startPos: number, lambda: (...v: Array<T>) => T): number {
-        const delta = ctx.stackPos - startPos
-        const producerArgs = Functions.extractArguments(lambda)
-        if (producerArgs.length === 0) return 0 // <-- 0 argument attendu
-        const hasRest = Functions.hasRestArgument(producerArgs)
-
-        return hasRest ?
-            delta + producerArgs.length - 1 : // e.g. (c, ...rest) => {}
-            producerArgs.length // e.g. (l, r) => {}
+        return ctx.productionManager.calculateStackDepth(startPos, lambda)
     }
 
     static handleNTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
 
-        const startPos = ctx.stackPos
+        const startPos = ctx.productionManager.pos
 
         // run encapsulated lambda
         const res = lambda(ctx)
@@ -135,17 +130,7 @@ export default class Utils {
         if (res !== Result.Parsed || !producer)
             return res
 
-        const args = new Array<T>()
-        let count = nbArgs !== undefined ? nbArgs : Utils.calculateStackDepth(ctx, startPos, producer)
-
-        while (count > 0 && !ctx._stack.isEmpty) {
-            const value = ctx._stack.pop()
-            if (value === undefined) break
-            args.unshift(value)
-            count--
-        }
-
-        ctx._stack.push(producer(...args))
+        ctx.productionManager.produce(startPos, producer, nbArgs)
 
         return Result.Parsed
     }
