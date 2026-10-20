@@ -66,7 +66,7 @@ export default class Utils {
 
         ctx.tokenManager.append(token)
 
-        const product = (producer !== undefined) ? producer(symbol) : undefined
+        const product = (producer !== undefined) ? producer(symbol) : symbol as T
         if (product !== undefined) {
             ctx.productionManager.append(product)
         }
