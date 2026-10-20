@@ -17,6 +17,16 @@ In this workspace, `@cyann/js-commons` uses the adjacent `../js-commons`
 checkout. Install its dependencies with `npm ci --prefix ../js-commons`, then
 run `npm ci` here. `npm run build` and `npm test` rebuild Commons first.
 
+### TypeScript playground
+
+With Node.js 24, run `npm start` to execute `playground.ts` directly, or
+`npm run dev` to restart it whenever that file or its imported sources change.
+Both commands rebuild the local Commons dependency before starting.
+
+The example parses an addition and prints `12+30 = 42`. Edit `playground.ts`
+to experiment, or pass another input with `npm start -- "7+8"` (also supported
+with `npm run dev -- "7+8"`).
+
 > :golf: Practice it with: [grammar-lab](about:blank). Take inspiration from the living examples, try it with your source code, build your own BNF grammar and **download it** from **Js-Parsec** tab. And... enjoy :relaxed:!
 >
 > the **grammar-lab** front-end:
