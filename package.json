@@ -9,6 +9,8 @@
     "url": "https://github.com/YannCaron/js-parsec"
   },
   "scripts": {
+    "prebuild": "npm run build --prefix ../js-commons",
+    "pretest": "npm run build --prefix ../js-commons",
     "build": "tsc",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-transform-types --test",
     "dev": "npx tsx --test --watch tests/unique.test.ts",
@@ -34,6 +36,6 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@cyann/js-commons": "^0.2.7"
+    "@cyann/js-commons": "file:../js-commons"
   }
 }

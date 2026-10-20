@@ -13,6 +13,10 @@ That is the essence of Js-Parsec to be an **Embeded DSL**.
 
 Install it from NPM: `npm install --save @cyann/js-parsec`
 
+In this workspace, `@cyann/js-commons` uses the adjacent `../js-commons`
+checkout. Install its dependencies with `npm ci --prefix ../js-commons`, then
+run `npm ci` here. `npm run build` and `npm test` rebuild Commons first.
+
 > :golf: Practice it with: [grammar-lab](about:blank). Take inspiration from the living examples, try it with your source code, build your own BNF grammar and **download it** from **Js-Parsec** tab. And... enjoy :relaxed:!
 >
 > the **grammar-lab** front-end:
