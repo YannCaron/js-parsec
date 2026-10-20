@@ -103,20 +103,19 @@ export default class Utils {
         const token = new Token(symbol, pos, type);
 
         ctx.tokenManager.append(token)
-        //if (ctx._recordDeep > 0)
-        //    ctx._transactionStack.push(new TokenTransaction<T>(token))
+        if (ctx.transactionManager.isActive)
+            ctx.transactionManager.append(new TokenTransaction<T>(token))
 
-        const product = (producer !== undefined) ? producer(symbol) : token as T
+        const product = (producer !== undefined) ? producer(symbol) : symbol as T
         if (product !== undefined) {
             ctx.productionManager.append(product)
-            //ctx._transactionStack.push(new ProductTransaction<T>(product))
+
+            if (ctx.transactionManager.isActive)
+                ctx.transactionManager.append(new ProductTransaction<T>(product))
+
         }
 
         return Result.Parsed
-    }
-
-    static calculateStackDepth<T>(ctx: Context<T>, startPos: number, lambda: (...v: Array<T>) => T): number {
-        return ctx.productionManager.calculateStackDepth(startPos, lambda)
     }
 
     static handleNTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
