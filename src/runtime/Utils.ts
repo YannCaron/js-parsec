@@ -36,7 +36,7 @@ export default class Utils {
     static handlePackrat<T>(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         return lambda(ctx)
-
+/*
         const tokenPos = ctx.pos
         const memo = ctx.getMemo(parsem, tokenPos)
 
@@ -74,9 +74,8 @@ export default class Utils {
         })
 
         return res;
-
+*/
     }
-
 
     static handleSeedGrowing<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
@@ -107,7 +106,7 @@ export default class Utils {
         //if (ctx._recordDeep > 0)
         //    ctx._transactionStack.push(new TokenTransaction<T>(token))
 
-        const product = (producer !== undefined) ? producer(symbol) : undefined
+        const product = (producer !== undefined) ? producer(symbol) : token as T
         if (product !== undefined) {
             ctx.productionManager.append(product)
             //ctx._transactionStack.push(new ProductTransaction<T>(product))
