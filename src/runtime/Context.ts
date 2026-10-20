@@ -145,7 +145,7 @@ export default class Context<T> {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
         this._builderManager = new BuilderManager()
-        this._productionManager = new ProductionManager<T>()
+        this._productionManager = new ProductionManager<T>(this)
         this._transactionManager = new TransactionManager();
         this._memoizer = new WeakMap<Parsem<T>, Map<number, MemoEntry<T>>>();
     }

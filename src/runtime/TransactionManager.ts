@@ -10,54 +10,78 @@ export abstract class Transaction<T> {
 
 export class TokenTransaction<T> extends Transaction<T> {
 
-    private readonly token: Token
+    private readonly _token: Token
 
     constructor(token: Token) {
         super()
-        this.token = token
+        this._token = token
     }
 
     apply(ctx: Context<T>): void {
-        ctx.appendToken(this.token)
+        ctx.tokenManager.append(this._token)
     }
 
     reverse(ctx: Context<T>): void {
-        ctx._tokens.pop()
+        ctx.tokenManager.consume()
     }
 
 }
 
 export class ProductTransaction<T> extends Transaction<T> {
 
-    private readonly production: T
+    private readonly _product: T
 
-    constructor(production: T) {
+    constructor(product: T) {
         super()
-        this.production = production
+        this._product = product
     }
 
     apply(ctx: Context<T>): void {
-        ctx._stack.push(this.production)
+        ctx.productionManager.append(this._product)
     }
 
     reverse(ctx: Context<T>): void {
-        ctx._stack.pop()
+        ctx.productionManager.consume()
     }
 
 }
 
 
+export class ConsumeTransaction<T> extends Transaction<T> {
+
+    private readonly _product: T
+
+    constructor(product: T) {
+        super()
+        this._product = product
+    }
+
+    apply(ctx: Context<T>): void {
+        ctx.productionManager.consume()
+    }
+
+    reverse(ctx: Context<T>): void {
+        ctx.productionManager.append(this._product)
+    }
+
+}
+
 export default class TransactionManager<T> {
 
     readonly _stacks: Stack<Transaction<T>[]>
+
+    get isActive(): boolean {
+        return !this._stacks.isEmpty
+    }
 
     constructor() {
         this._stacks = new Stack<Transaction<T>[]>()
     }
 
     append(transaction: Transaction<T>): void {
-        if (this._stacks.last !== undefined)
-            this._stacks.last.push(transaction)
+        if (!this.isActive) throw new Error(`Cannot create transation on an empty transaction stack.`)
+
+        this._stacks.last.push(transaction)
     }
 
     create() {

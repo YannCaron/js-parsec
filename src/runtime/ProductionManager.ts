@@ -1,8 +1,11 @@
 import { Functions, Stack } from '@cyann/js-commons'
+import Context from './Context.ts'
+import { ConsumeTransaction, ProductTransaction } from './TransactionManager.ts'
 
 export default class ProductionManager<T> {
 
-    readonly _stack: Stack<T>
+    private readonly _ctx: Context<T>
+    private readonly _stack: Stack<T>
 
     get stack(): Array<T> {
         return [...this._stack]
@@ -30,7 +33,8 @@ export default class ProductionManager<T> {
         return this._stack.first
     }
 
-    constructor() {
+    constructor(ctx: Context<T>) {
+        this._ctx = ctx
         this._stack = new Stack<T>()
     }
 
@@ -59,16 +63,25 @@ export default class ProductionManager<T> {
 
     produce(startPos: number, producer: (...v: Array<T>) => T, nbArgs?: number): void {
         const args = new Array<T>()
-        let count = nbArgs !== undefined ? nbArgs : this.calculateStackDepth(startPos, producer)
+        let count = nbArgs ?? this.calculateStackDepth(startPos, producer)
 
         while (count > 0 && !this._stack.isEmpty) {
-            const value = this.consume()
-            if (value === undefined) break
-            args.unshift(value)
+            const arg = this.consume()
+            if (arg === undefined) break
+            args.unshift(arg)
+
+            if (this._ctx.transactionManager.isActive)
+                this._ctx.transactionManager.append(new ConsumeTransaction(arg))
+
             count--
         }
 
-        this.append(producer(...args))
+        const product = producer(...args)
+        this.append(product)
+
+        if (this._ctx.transactionManager.isActive) {
+            this._ctx.transactionManager.append(new ProductTransaction(product))
+        }
     }
 
 }
