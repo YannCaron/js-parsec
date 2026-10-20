@@ -5,18 +5,12 @@ import TokenManager from './TokenManager.ts'
 import BuilderManager from './BuilderManager.ts'
 import ProductionManager from './ProductionManager.ts'
 
-interface MemoEntry {
-    result: Result;
-    pos: number;
-}
-
 export default class Context<T> {
 
     private readonly _sourceManager: SourceManager
     private readonly _tokenManager: TokenManager
     private readonly _builderManager: BuilderManager
     private readonly _productionManager: ProductionManager<T>
-    private readonly _memoizer = new Map<Parsem<T>, Map<number, MemoEntry>>()
 
     get sourceManager(): SourceManager {
         return this._sourceManager
@@ -32,24 +26,6 @@ export default class Context<T> {
 
     get productionManager(): ProductionManager<T> {
         return this._productionManager
-    }
-
-    getMemo(parsem: Parsem<T>, pos: number): MemoEntry | undefined {
-        return this._memoizer.get(parsem)?.get(pos)
-    }
-
-    setMemo(parsem: Parsem<T>, pos: number, result: Result, tokenPos: number): void {
-        let position = this._memoizer.get(parsem)
-
-        if (!position) {
-            position = new Map<number, MemoEntry>
-            this._memoizer.set(parsem, position)
-        }
-
-        position.set(pos, {
-            result,
-            pos: tokenPos
-        })
     }
 
     constructor(src: string) {
