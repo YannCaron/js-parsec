@@ -1,8 +1,11 @@
 import {
     Context,
     Result,
+    charIn,
     charInInterval,
     choice,
+    expression,
+    optional,
     productNT,
     productT,
     repeat,
@@ -10,21 +13,40 @@ import {
     wordIs
 } from './index.ts'
 
-const parser =
-    sequence(
-        choice(
-            sequence(
-                productT(wordIs('1'), () => 'a'),
-                productT(wordIs('2'), () => 'b')
-            ),
-            sequence(
-                productT(wordIs('1'), () => 'c'),
-                productT(wordIs('3'), () => 'd')
-            )
-        ),
-        productT(wordIs('4'), () => 'e')
-    )
 
-const ctx = new Context('134')
+const E = expression()
 
-console.log(parser.parse(ctx))
+// n = [0-9]+
+const n = expression()
+n.ref = repeat(charIn('0123456789')).productT(v => Number(v))
+
+// a = '+'
+const a = expression(charIn('+').productT(() => (l: number, r: number) => l + r))
+
+// m = '-'
+const m = expression()
+m.ref = charIn('-').productT(() => (l: number, r: number) => l - r)
+
+// x = '*'
+const x = expression()
+x.ref = charIn('*').productT(() => (l: number, r: number) => l * r)
+
+// d = '/'
+const d = expression()
+d.ref = charIn('/').productT(() => (l: number, r: number) => l / r)
+
+// M = n (x | d  n)*
+const M = expression(sequence(E, optional(repeat(sequence(choice(x, d), E).productNT<any>((l, op, r) => op(l, r))))))
+
+// A = M (a | m  M)*
+const A = expression()
+A.ref = sequence(M, optional(repeat(sequence(choice(a, m), M).productNT<any>((l, op, r) => op(l, r)))))
+
+// E = '(' A ')' | n
+E.ref = choice(sequence(charIn('('), A, charIn(')')), n)
+
+const ctx = new Context<number>("1+2*3-4")
+
+console.log(A.parse(ctx))
+console.log(ctx.productionManager.stack);
+console.log(ctx.instructionTapeManager.queue);

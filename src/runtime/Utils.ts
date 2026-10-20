@@ -3,6 +3,7 @@ import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
 import Token from "./Token.ts"
+import { PushAggregatorInstruction, PushValueInstruction } from "./InstructionTapeManager.ts"
 
 export default class Utils {
 
@@ -34,11 +35,12 @@ export default class Utils {
 
     static handlePackrat<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
-        return lambda(ctx)
+        const res = lambda(ctx)
 
+        return res;
     }
 
-    
+
     static handleSeedGrowing<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         const res = lambda(ctx)
@@ -67,19 +69,19 @@ export default class Utils {
         ctx.tokenManager.append(token)
 
         const product = (producer !== undefined) ? producer(symbol) : symbol as T
-        if (product !== undefined) {
-            ctx.productionManager.append(product)
-        }
+        ctx.instructionTapeManager.append(new PushValueInstruction<T>(product))
+        // TODO: remove
+        ctx.productionManager.append(product)
+
 
         return Result.Parsed
     }
 
-    static calculateStackDepth<T>(ctx: Context<T>, startPos: number, lambda: (...v: Array<T>) => T): number {
-        return ctx.productionManager.calculateStackDepth(startPos, lambda)
-    }
-
     static handleNTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
 
+        const tapeLength = ctx.instructionTapeManager.length
+
+        // TODO: remove
         const startPos = ctx.productionManager.pos
 
         // run encapsulated lambda
@@ -88,6 +90,10 @@ export default class Utils {
         if (res !== Result.Parsed || !producer)
             return res
 
+        const arity = nbArgs !== undefined ? nbArgs : ctx.instructionTapeManager.calculateStackDepth(startPos, producer)
+        ctx.instructionTapeManager.append(new PushAggregatorInstruction<T>(arity, producer))
+
+        // TODO: remove
         ctx.productionManager.produce(startPos, producer, nbArgs)
 
         return Result.Parsed
