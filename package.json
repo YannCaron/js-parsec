@@ -11,9 +11,12 @@
   "scripts": {
     "prebuild": "npm run build --prefix ../js-commons",
     "pretest": "npm run build --prefix ../js-commons",
+    "prestart": "npm run build --prefix ../js-commons",
+    "predev": "npm run build --prefix ../js-commons",
     "build": "tsc",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-transform-types --test",
-    "dev": "npx tsx --test --watch tests/unique.test.ts",
+    "start": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-transform-types playground.ts",
+    "dev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-transform-types --watch --watch-preserve-output playground.ts",
     "doc": "jsdoc --readme ./readme.md --destination ./doc ./",
     "prepack": "npm run build",
     "publish": "npm publish --access public"
