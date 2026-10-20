@@ -1,6 +1,3 @@
-import type { Stack, StringBuilder } from '@cyann/js-commons'
-import Token from './Token.ts'
-import { TokenType } from './TokenType.ts'
 import { Result } from './Result.ts';
 import type { Parsem } from '../Parsem.ts';
 import SourceManager from './SourceManager.ts'
@@ -15,67 +12,11 @@ interface MemoEntry {
 
 export default class Context<T> {
 
-    readonly _sourceManager: SourceManager
-    readonly _tokenManager: TokenManager
-    readonly _builderManager: BuilderManager
-    readonly _productionManager: ProductionManager<T>
-
-    get pos(): number {
-        return this.sourceManager.pos
-    }
-
-    set pos(value: number) {
-        this.sourceManager.pos = value
-    }
-
-    get current(): string | null {
-        return this.sourceManager.current
-    }
-
-    /* istanbul ignore next */
-    get currentBuilder(): StringBuilder {
-        return this.builderManager.current
-    }
-
-    get tokens(): Array<Token> {
-        return this.tokenManager.tokens
-    }
-
-    get stack(): Array<T> {
-        return this.productionManager.stack
-    }
-
-    get builderPos(): number {
-        return this.builderManager.builderPos
-    }
-
-    set builderPos(value: number) {
-        this.builderManager.builderPos = value
-    }
-
-    get buildersPos(): number {
-        return this.builderManager.pos
-    }
-
-    set buildersPos(value: number) {
-        this.builderManager.pos = value
-    }
-
-    get tokensPos(): number {
-        return this.tokenManager.pos
-    }
-
-    set tokensPos(value: number) {
-        this.tokenManager.pos = value
-    }
-
-    get stackPos(): number {
-        return this.productionManager.pos
-    }
-
-    set stackPos(value: number) {
-        this.productionManager.pos = value
-    }
+    private readonly _sourceManager: SourceManager
+    private readonly _tokenManager: TokenManager
+    private readonly _builderManager: BuilderManager
+    private readonly _productionManager: ProductionManager<T>
+    private readonly _memoizer = new Map<Parsem<T>, Map<number, MemoEntry>>()
 
     get sourceManager(): SourceManager {
         return this._sourceManager
@@ -91,31 +32,6 @@ export default class Context<T> {
 
     get productionManager(): ProductionManager<T> {
         return this._productionManager
-    }
-
-    // Keep the in-progress transactions connected to the managers' storage.
-    get _tokens(): Array<Token> {
-        return this.tokenManager._tokens
-    }
-
-    get _stack(): Stack<T> {
-        return this.productionManager._stack
-    }
-
-    get enhancedSource(): string {
-        return this.sourceManager.enhancedSource
-    }
-
-    get result(): Array<T> | T {
-        this.sourceManager.assertComplete()
-        return this.productionManager.result
-    }
-
-    get uniqueResult(): T {
-        if (this.productionManager.pos !== 1)
-            this.sourceManager.assertComplete()
-
-        return this.productionManager.uniqueResult
     }
 
     getMemo(parsem: Parsem<T>, pos: number): MemoEntry | undefined {
@@ -140,35 +56,29 @@ export default class Context<T> {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
         this._builderManager = new BuilderManager()
-        this._productionManager = new ProductionManager<T>()
+        this._productionManager = new ProductionManager<T>(this._sourceManager)
     }
 
     next() {
-        if (this.current === null) return
+        const current = this.sourceManager.current
 
-        if (this.currentBuilder) {
-            this.builderManager.append(this.current)
+        if (current === null) return
+
+        if (this.builderManager.current) {
+            this.builderManager.append(current)
         } else {
-            this.createToken(this.current, this.pos)
+            this.tokenManager.create(current, this.sourceManager.pos)
         }
         this.sourceManager.next()
-    }
-
-    createToken(symbol: string, pos: number, type: TokenType = TokenType.DEFAULT) {
-        this.tokenManager.create(symbol, pos, type)
-    }
-
-    appendToken(token: Token) {
-        this.tokenManager.append(token)
     }
 
     /* istanbul ignore next */
     toString(): string {
         return `Context {
-    - pos: ${this.pos}
-    - src: ${this.enhancedSource}
-    - stack: ${this.stack}
-    - tokens: ${this.tokens.map(e => '\n        ' + JSON.stringify(e))}
+    - pos: ${this.sourceManager.pos}
+    - src: ${this.sourceManager.enhancedSource}
+    - stack: ${this.productionManager.stack}
+    - tokens: ${this.tokenManager.tokens.map(e => '\n        ' + JSON.stringify(e))}
 }`
     }
 

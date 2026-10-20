@@ -12,7 +12,7 @@ class CharIn<T> extends Parsem<T> {
     }
 
     parse(ctx: Context<T>) : Result {
-        if (ctx.current != null && this._chars.indexOf(ctx.current) !== -1) {
+        if (ctx.sourceManager.current != null && this._chars.indexOf(ctx.sourceManager.current) !== -1) {
             ctx.next()
             return Result.Parsed
         }

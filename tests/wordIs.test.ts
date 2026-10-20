@@ -15,15 +15,15 @@ describe('basic wordIs', () => {
     test('wordIs should parse "hi world"', () => {
         const ctx = new Context("hi world")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 8)
+        assert.strictEqual(ctx.sourceManager.pos, 8)
     })
 
     test('wordIs should not parse "hi wurld"', () => {
         const ctx = new Context("hi wurld")
         assert.strictEqual(parser.parse(ctx), Result.NotParsed)
-        assert.strictEqual(ctx.pos, 0)
-        assert.deepStrictEqual(ctx.tokens, [])
-        assert.deepStrictEqual(ctx.stack, [])
+        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [])
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
     })
     
     test('wordIs to string', () => {

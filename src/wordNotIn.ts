@@ -15,7 +15,7 @@ class WordNotIn<T> extends Parsem<T> {
     parseWordNotIs(ctx: Context<T>, str: string) {
         return Utils.handleBackup(ctx, ctx => {
             for (const chr of str) {
-                if (!ctx.current || chr !== ctx.current)
+                if (!ctx.sourceManager.current || chr !== ctx.sourceManager.current)
                     return Result.NotParsed
                 ctx.next()
             }
@@ -27,7 +27,7 @@ class WordNotIn<T> extends Parsem<T> {
 
     parse(ctx: Context<T>): Result {
         if (this._strs.isEmpty) return Result.Continue
-        if (ctx.current === null) return Result.NotParsed
+        if (ctx.sourceManager.current === null) return Result.NotParsed
   
         return Utils.handleBackup(ctx, ctx => {
 

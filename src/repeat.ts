@@ -10,17 +10,17 @@ class Repeat<T> extends ParsemDecorator<T> {
         return Utils.handlePackrat(this.decorated, ctx,
             ctx => Utils.handleBackup(ctx, ctx => {
                 let res = Result.NotParsed
-                let hasNext = ctx.current != null
+                let hasNext = ctx.sourceManager.current != null
                 let parsedRes = this.decorated.parse(ctx)
 
                 while (parsedRes === Result.Parsed && hasNext) {
-                    const startPos = ctx.pos
+                    const startPos = ctx.sourceManager.pos
                     res = Result.Parsed
                     parsedRes = this.decorated.parse(ctx)
 
-                    hasNext = ctx.current != null
+                    hasNext = ctx.sourceManager.current != null
 
-                    if (parsedRes === Result.Parsed && ctx.pos === startPos)
+                    if (parsedRes === Result.Parsed && ctx.sourceManager.pos === startPos)
                         throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
                 }
 

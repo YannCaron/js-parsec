@@ -37,7 +37,7 @@ describe('development test', () => {
         const ctx = new Context('134')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['c', 'd', 'e'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['c', 'd', 'e'])
     })
 
 })

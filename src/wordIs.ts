@@ -17,7 +17,7 @@ class WordIs<T> extends Parsem<T> {
 
         return Utils.handleBackup(ctx, ctx => {
             for (const chr of this._str) {
-                if (!ctx.current || chr !== ctx.current)
+                if (!ctx.sourceManager.current || chr !== ctx.sourceManager.current)
                     return Result.NotParsed
                 ctx.next()
             }

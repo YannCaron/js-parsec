@@ -26,8 +26,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('x')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
-        assert.deepStrictEqual(ctx.stack, ['first'])
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.productionManager.stack, ['first'])
     })
 
     test('a partially matched alternative restores position, tokens and produced values', () => {
@@ -39,9 +39,9 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.stack, ['ac'])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.stack, ['ac'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.STRING),
             new Token('c', 1, TokenType.PUNCTUATION)
         ])
@@ -66,9 +66,9 @@ describe('PEG invariants', () => {
         const ctx = new Context<unknown>('1ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 3)
-        assert.deepStrictEqual(ctx.stack, [[1, 'a']])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.deepStrictEqual(ctx.productionManager.stack, [[1, 'a']])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('1', 0, TokenType.NUMBER),
             new Token('a', 1, TokenType.STRING),
             new Token('c', 2, TokenType.PUNCTUATION)
@@ -86,8 +86,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['ac'])
-        assert.deepStrictEqual(ctx.tokens, [new Token('ac', 0, TokenType.STRING)])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['ac'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ac', 0, TokenType.STRING)])
     })
 
     test('an absent optional expression is zero-width and leaves no state behind', () => {
@@ -98,9 +98,9 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Continue)
-        assert.strictEqual(ctx.pos, 0)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [])
+        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [])
     })
 
     test('greedy repetition rolls back its final failed iteration', () => {
@@ -111,10 +111,10 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('abac')
 
         assert.strictEqual(repeat(pair).parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.strictEqual(ctx.current, 'a')
-        assert.deepStrictEqual(ctx.stack, ['a'])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.strictEqual(ctx.sourceManager.current, 'a')
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.STRING),
             new Token('b', 1, TokenType.PUNCTUATION)
         ])
@@ -129,9 +129,9 @@ describe('PEG invariants', () => {
         const ctx = new Context<never>('x')
 
         assert.throws(() => repeat(new EmptySuccess()).parse(ctx), /Infinite loop/)
-        assert.strictEqual(ctx.pos, 0)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [])
+        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [])
     })
 
     test('right recursion consumes deterministically and terminates', () => {
@@ -143,8 +143,8 @@ describe('PEG invariants', () => {
         const ctx = new Context('aaab')
 
         assert.strictEqual(recursive.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 4)
-        assert.doesNotThrow(() => ctx.result)
+        assert.strictEqual(ctx.sourceManager.pos, 4)
+        assert.doesNotThrow(() => ctx.productionManager.result)
     })
 
     test('non-terminal actions receive produced values in source order', () => {
@@ -162,7 +162,7 @@ describe('PEG invariants', () => {
         const ctx = new Context<number | number[]>('123')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, [[1, 2, 3]])
+        assert.deepStrictEqual(ctx.productionManager.stack, [[1, 2, 3]])
     })
 
     for (const [name, value] of [
@@ -176,7 +176,7 @@ describe('PEG invariants', () => {
             const ctx = new Context<unknown>('x')
 
             assert.strictEqual(parser.parse(ctx), Result.Parsed)
-            assert.deepStrictEqual(ctx.stack, [value])
+            assert.deepStrictEqual(ctx.productionManager.stack, [value])
         })
     }
 
@@ -184,7 +184,7 @@ describe('PEG invariants', () => {
         const ctx = new Context('ab')
 
         assert.strictEqual(wordIs('a').parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
-        assert.throws(() => ctx.result, /Source not completelly parsed/)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
     })
 })

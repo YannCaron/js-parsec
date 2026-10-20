@@ -17,7 +17,7 @@ import {
 
 describe('Context managers', () => {
 
-    test('exposes parsed state through managers and the existing Context API', () => {
+    test('exposes parsed state only through the four manager accessors', () => {
         const ctx = new Context<string>('abc')
         const parser = productT(wordIs<string>('ab'), value => value)
 
@@ -26,27 +26,32 @@ describe('Context managers', () => {
         assert.ok(ctx.builderManager instanceof BuilderManager)
         assert.ok(ctx.productionManager instanceof ProductionManager)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.sourceManager.pos, ctx.pos)
+        const accessors = Object.entries(Object.getOwnPropertyDescriptors(Context.prototype))
+            .filter(([, descriptor]) => descriptor.get || descriptor.set)
+            .map(([name]) => name).sort()
+
+        assert.deepStrictEqual(accessors, ['builderManager', 'productionManager', 'sourceManager', 'tokenManager'])
+        assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.strictEqual(ctx.sourceManager.current, 'c')
-        assert.strictEqual(ctx.enhancedSource, 'ab[c]')
+        assert.strictEqual(ctx.sourceManager.enhancedSource, 'ab[c]')
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ab', 0)])
         assert.deepStrictEqual(ctx.productionManager.stack, ['ab'])
         assert.strictEqual(ctx.builderManager.pos, 0)
-        assert.throws(() => ctx.result, /Source not completelly parsed/)
+        assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
 
         ctx.next()
         ctx.next()
 
-        assert.strictEqual(ctx.pos, 3)
-        assert.strictEqual(ctx.current, null)
-        assert.strictEqual(ctx.result, 'ab')
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.strictEqual(ctx.sourceManager.current, null)
+        assert.strictEqual(ctx.productionManager.result, 'ab')
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('ab', 0),
             new Token('c', 2, TokenType.DEFAULT)
         ])
 
-        ctx.tokens.pop()
-        ctx.stack.pop()
+        ctx.tokenManager.tokens.pop()
+        ctx.productionManager.stack.pop()
         assert.strictEqual(ctx.tokenManager.pos, 2)
         assert.strictEqual(ctx.productionManager.pos, 1)
     })
@@ -67,7 +72,7 @@ describe('Context managers', () => {
         assert.strictEqual(ctx.builderManager.pos, 0)
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('xac', 0, TokenType.STRING)])
         assert.deepStrictEqual(ctx.productionManager.stack, ['xac'])
-        assert.strictEqual(ctx.uniqueResult, 'xac')
+        assert.strictEqual(ctx.productionManager.uniqueResult, 'xac')
     })
 
     test('keeps manager state isolated when a producer parses another context', () => {
@@ -80,8 +85,8 @@ describe('Context managers', () => {
         const outer = new Context<string>('ab')
 
         assert.strictEqual(outerParser.parse(outer), Result.Parsed)
-        assert.strictEqual(outer.result, 'ab')
-        assert.strictEqual(inner.result, 'xy')
+        assert.strictEqual(outer.productionManager.result, 'ab')
+        assert.strictEqual(inner.productionManager.result, 'xy')
         assert.deepStrictEqual(outer.tokenManager.tokens, [new Token('ab', 0)])
         assert.deepStrictEqual(inner.tokenManager.tokens, [new Token('xy', 0)])
         assert.strictEqual(outer.builderManager.pos, 0)

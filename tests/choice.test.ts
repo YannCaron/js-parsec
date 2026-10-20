@@ -36,31 +36,31 @@ describe('choice backup', () => {
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("ab")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
     })
     
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("ad")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
     test('choice that does not parse should be positioned at begining', () => {
         const ctx = new Context("ac")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 0)
+        assert.strictEqual(ctx.sourceManager.pos, 0)
     })
 
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("cd")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
     test('choice that parse should be positioned at end', () => {
         const ctx = new Context("cb")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
 })

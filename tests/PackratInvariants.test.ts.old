@@ -29,7 +29,7 @@ class CountedParsem<T> extends ParsemDecorator<T> {
     parse(ctx: Context<T>): Result {
         if (this.evaluations.length >= this.budget) throw this.budgetFailure
 
-        this.evaluations.push([ctx, ctx.pos])
+        this.evaluations.push([ctx, ctx.sourceManager.pos])
 
         return this.decorated.parse(ctx)
     }
@@ -60,9 +60,9 @@ describe('Packrat recognition memoization invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.PUNCTUATION),
             new Token('c', 1, TokenType.PUNCTUATION)
         ])
@@ -76,9 +76,9 @@ describe('Packrat recognition memoization invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.PUNCTUATION),
             new Token('c', 1, TokenType.PUNCTUATION)
         ])
@@ -95,9 +95,9 @@ describe('Packrat recognition memoization invariants', () => {
         const ctx = new Context<string>('b')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
         assert.strictEqual(body.count(ctx, 0), 1, 'Continue is a completed memo entry, not an absent entry')
     })
 
@@ -112,10 +112,10 @@ describe('Packrat recognition memoization invariants', () => {
             const ctx = new Context<string>('')
 
             assert.strictEqual(parseUnderTest(parser, ctx), expected)
-            assert.strictEqual(ctx.pos, 0)
-            assert.strictEqual(ctx.current, null)
-            assert.deepStrictEqual(ctx.stack, [])
-            assert.deepStrictEqual(ctx.tokens, [])
+            assert.strictEqual(ctx.sourceManager.pos, 0)
+            assert.strictEqual(ctx.sourceManager.current, null)
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [])
             assert.strictEqual(body.count(ctx, 0), 1, 'EOF must be a valid memo position')
         })
     }
@@ -134,9 +134,9 @@ describe('Packrat recognition memoization invariants', () => {
             const ctx = new Context<string>('a'.repeat(length) + 'e')
 
             assert.strictEqual(parseUnderTest(rule, ctx), Result.NotParsed)
-            assert.strictEqual(ctx.pos, 0)
-            assert.deepStrictEqual(ctx.stack, [])
-            assert.deepStrictEqual(ctx.tokens, [])
+            assert.strictEqual(ctx.sourceManager.pos, 0)
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [])
             assert.ok(body.evaluations.length <= length + 1,
                 `Expected at most ${length + 1} evaluations; observed ${body.evaluations.length}`)
 
@@ -163,16 +163,16 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const actual = new Context<string>('ac')
 
         assert.strictEqual(parseUnderTest(grammar(false), reference), Result.Parsed)
-        assert.deepStrictEqual(reference.stack, ['a'])
-        assert.deepStrictEqual(reference.tokens, [
+        assert.deepStrictEqual(reference.productionManager.stack, ['a'])
+        assert.deepStrictEqual(reference.tokenManager.tokens, [
             new Token('a', 0, TokenType.STRING),
             new Token('c', 1, TokenType.PUNCTUATION)
         ])
 
         assert.strictEqual(parseUnderTest(grammar(true), actual), Result.Parsed)
-        assert.strictEqual(actual.pos, reference.pos)
-        assert.deepStrictEqual(actual.stack, reference.stack)
-        assert.deepStrictEqual(actual.tokens, reference.tokens)
+        assert.strictEqual(actual.sourceManager.pos, reference.sourceManager.pos)
+        assert.deepStrictEqual(actual.productionManager.stack, reference.productionManager.stack)
+        assert.deepStrictEqual(actual.tokenManager.tokens, reference.tokenManager.tokens)
     })
 
     test('Optional and Repeat sharing a child match an equivalent grammar with distinct children', () => {
@@ -189,14 +189,14 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const actual = new Context<string>('aa')
 
         assert.strictEqual(parseUnderTest(grammar(false), reference), Result.NotParsed)
-        assert.strictEqual(reference.pos, 0)
-        assert.deepStrictEqual(reference.stack, [])
-        assert.deepStrictEqual(reference.tokens, [])
+        assert.strictEqual(reference.sourceManager.pos, 0)
+        assert.deepStrictEqual(reference.productionManager.stack, [])
+        assert.deepStrictEqual(reference.tokenManager.tokens, [])
 
         assert.strictEqual(parseUnderTest(grammar(true), actual), Result.NotParsed)
-        assert.strictEqual(actual.pos, reference.pos)
-        assert.deepStrictEqual(actual.stack, reference.stack)
-        assert.deepStrictEqual(actual.tokens, reference.tokens)
+        assert.strictEqual(actual.sourceManager.pos, reference.sourceManager.pos)
+        assert.deepStrictEqual(actual.productionManager.stack, reference.productionManager.stack)
+        assert.deepStrictEqual(actual.tokenManager.tokens, reference.tokenManager.tokens)
     })
 
     test('ordered choice still tries the following alternative after Continue', () => {
@@ -205,9 +205,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('b')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
     })
 
     test('reused Continue productions execute no callbacks and produce no tokens or values', () => {
@@ -225,10 +225,10 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('b')
 
         assert.strictEqual(parseUnderTest(sequence(optional(rule), optional(rule), wordIs<string>('b')), ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(calls, [])
-        assert.deepStrictEqual(ctx.stack, [])
-        assert.deepStrictEqual(ctx.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
     })
 
     test('different rule identities with the same text do not share semantic results', () => {
@@ -242,9 +242,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(first.toString(), second.toString())
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.result, 'second')
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.productionManager.result, 'second')
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.STRING),
             new Token('c', 1, TokenType.PUNCTUATION)
         ])
@@ -259,9 +259,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(first.constructor, second.constructor)
         assert.notStrictEqual(first, second)
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.result, [])
-        assert.strictEqual(ctx.pos, 1)
-        assert.deepStrictEqual(ctx.tokens, [new Token('c', 0, TokenType.PUNCTUATION)])
+        assert.deepStrictEqual(ctx.productionManager.result, [])
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('c', 0, TokenType.PUNCTUATION)])
     })
 
     test('the same rule at different offsets preserves each occurrence and token position', () => {
@@ -272,9 +272,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('ab')
 
         assert.strictEqual(parseUnderTest(sequence(rule, rule), ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.result, ['a', 'b'])
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.result, ['a', 'b'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('a', 0, TokenType.STRING),
             new Token('b', 1, TokenType.STRING)
         ])
@@ -290,11 +290,11 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(rule, first), Result.Parsed)
         assert.strictEqual(parseUnderTest(rule, failed), Result.NotParsed)
         assert.strictEqual(parseUnderTest(rule, last), Result.Parsed)
-        assert.strictEqual(first.pos, 1)
-        assert.strictEqual(failed.pos, 0)
-        assert.strictEqual(last.pos, 1)
-        assert.deepStrictEqual(failed.tokens, [])
-        assert.deepStrictEqual(first.tokens, last.tokens)
+        assert.strictEqual(first.sourceManager.pos, 1)
+        assert.strictEqual(failed.sourceManager.pos, 0)
+        assert.strictEqual(last.sourceManager.pos, 1)
+        assert.deepStrictEqual(failed.tokenManager.tokens, [])
+        assert.deepStrictEqual(first.tokenManager.tokens, last.tokenManager.tokens)
         assert.strictEqual(body.count(first, 0), 1)
         assert.strictEqual(body.count(failed, 0), 1)
         assert.strictEqual(body.count(last, 0), 1)
@@ -313,9 +313,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
         assert.strictEqual(parseUnderTest(parser, oldSource), Result.NotParsed)
-        assert.deepStrictEqual(second.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
-        assert.strictEqual(oldSource.pos, 0)
-        assert.deepStrictEqual(oldSource.tokens, [])
+        assert.deepStrictEqual(second.tokenManager.tokens, [new Token('b', 0, TokenType.PUNCTUATION)])
+        assert.strictEqual(oldSource.sourceManager.pos, 0)
+        assert.deepStrictEqual(oldSource.tokenManager.tokens, [])
     })
 
     test('a shared reduction uses the current preceding stack, not the first alternative snapshot', () => {
@@ -328,9 +328,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<unknown>('1ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 3)
-        assert.strictEqual(ctx.result, '2a')
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.strictEqual(ctx.productionManager.result, '2a')
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('1', 0, TokenType.NUMBER),
             new Token('a', 1, TokenType.STRING),
             new Token('c', 2, TokenType.PUNCTUATION)
@@ -348,9 +348,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
             const ctx = new Context<string>('ac')
 
             assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-            assert.strictEqual(ctx.pos, 2)
-            assert.deepStrictEqual(ctx.stack, capturedFirst ? [] : ['a'])
-            assert.deepStrictEqual(ctx.tokens, [
+            assert.strictEqual(ctx.sourceManager.pos, 2)
+            assert.deepStrictEqual(ctx.productionManager.stack, capturedFirst ? [] : ['a'])
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [
                 new Token('a', 0, capturedFirst ? TokenType.PUNCTUATION : TokenType.STRING),
                 new Token('c', 1, TokenType.PUNCTUATION)
             ])
@@ -366,8 +366,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.result, 'ac')
-        assert.deepStrictEqual(ctx.tokens, [new Token('ac', 0, TokenType.STRING)])
+        assert.strictEqual(ctx.productionManager.result, 'ac')
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ac', 0, TokenType.STRING)])
     })
 
     for (const [name, value] of [
@@ -385,9 +385,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
             const ctx = new Context<unknown>('ac')
 
             assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-            assert.strictEqual(ctx.pos, 2)
-            assert.deepStrictEqual(ctx.stack, [value])
-            assert.strictEqual(ctx.result, value)
+            assert.strictEqual(ctx.sourceManager.pos, 2)
+            assert.deepStrictEqual(ctx.productionManager.stack, [value])
+            assert.strictEqual(ctx.productionManager.result, value)
         })
     }
 
@@ -403,8 +403,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<unknown>('1abc')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 4)
-        assert.deepStrictEqual(ctx.result, [1, ['a', 'b']])
+        assert.strictEqual(ctx.sourceManager.pos, 4)
+        assert.deepStrictEqual(ctx.productionManager.result, [1, ['a', 'b']])
     })
 
     test('a zero-argument reduction leaves preceding values on the stack', () => {
@@ -416,7 +416,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<unknown>('1ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.result, [1, 'constant'])
+        assert.deepStrictEqual(ctx.productionManager.result, [1, 'constant'])
     })
 
     test('produced objects belong to separate occurrences and parse contexts', () => {
@@ -426,14 +426,14 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const second = new Context<{ value: string }>('aa')
 
         assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
-        const [left, right] = first.stack
+        const [left, right] = first.productionManager.stack
         assert.notStrictEqual(left, right)
         left.value = 'changed'
         assert.strictEqual(right.value, 'a')
 
         assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
-        assert.deepStrictEqual(second.stack, [{ value: 'a' }, { value: 'a' }])
-        assert.notStrictEqual(first.stack[0], second.stack[0])
+        assert.deepStrictEqual(second.productionManager.stack, [{ value: 'a' }, { value: 'a' }])
+        assert.notStrictEqual(first.productionManager.stack[0], second.productionManager.stack[0])
     })
 
     test('produced closures preserve identity and remain callable after rollback', () => {
@@ -446,8 +446,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<() => number>('ac')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.uniqueResult, callback)
-        assert.strictEqual(ctx.uniqueResult(), 42)
+        assert.strictEqual(ctx.productionManager.uniqueResult, callback)
+        assert.strictEqual(ctx.productionManager.uniqueResult(), 42)
     })
 
     test('an exception remains fatal and does not poison a fresh parse context', () => {
@@ -464,8 +464,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('a')
 
         assert.strictEqual(parseUnderTest(rule, ctx), Result.Parsed)
-        assert.strictEqual(ctx.result, 'a')
-        assert.deepStrictEqual(ctx.tokens, [new Token('a', 0, TokenType.STRING)])
+        assert.strictEqual(ctx.productionManager.result, 'a')
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('a', 0, TokenType.STRING)])
     })
 
     test('memoization must not turn a successful prefix into a complete parse', () => {
@@ -477,9 +477,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('ac!')
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.strictEqual(ctx.current, '!')
-        assert.throws(() => ctx.result, /Source not completelly parsed/)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.strictEqual(ctx.sourceManager.current, '!')
+        assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
     })
 })
 
@@ -501,9 +501,9 @@ describe('Packrat recursive cycle invariants', () => {
                 !(error instanceof RangeError) &&
                 /cycle|left.recurs|recurs.*progress/i.test(error.message)
             )
-            assert.strictEqual(ctx.pos, 0)
-            assert.deepStrictEqual(ctx.stack, [])
-            assert.deepStrictEqual(ctx.tokens, [])
+            assert.strictEqual(ctx.sourceManager.pos, 0)
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [])
         })
     }
 })

@@ -71,8 +71,8 @@ describe('nested optionals with choice', () => {
         const ctx = new Context("c")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
 
-        assert.strictEqual(ctx.tokens.length, 1)
-        assert.deepStrictEqual(ctx.tokens.pop(), new Token('c', 0, TokenType.PUNCTUATION))
+        assert.strictEqual(ctx.tokenManager.tokens.length, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.pop(), new Token('c', 0, TokenType.PUNCTUATION))
     })
 
 });

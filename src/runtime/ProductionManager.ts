@@ -1,8 +1,10 @@
 import { Functions, Stack } from '@cyann/js-commons'
+import type SourceManager from './SourceManager.ts'
 
 export default class ProductionManager<T> {
 
     readonly _stack: Stack<T>
+    private readonly _sourceManager: SourceManager
 
     get stack(): Array<T> {
         return [...this._stack]
@@ -17,6 +19,8 @@ export default class ProductionManager<T> {
     }
 
     get result(): Array<T> | T {
+        this._sourceManager.assertComplete()
+
         if (this._stack.length === 1)
             return this._stack.last
 
@@ -24,13 +28,17 @@ export default class ProductionManager<T> {
     }
 
     get uniqueResult(): T {
+        if (this.pos !== 1)
+            this._sourceManager.assertComplete()
+
         if (this._stack.length === 1)
             return this._stack.last
 
         return this._stack.first
     }
 
-    constructor() {
+    constructor(sourceManager: SourceManager) {
+        this._sourceManager = sourceManager
         this._stack = new Stack<T>()
     }
 

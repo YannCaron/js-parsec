@@ -18,8 +18,8 @@ export default class Utils {
         // run encapsulated lambda
         const res = lambda(ctx)
 
-        if (res === Result.Continue && ctx.pos != backup.pos)
-            throw new Error(`Error at ${ctx.pos} "continue" status cannot modify execution stack!`)
+        if (res === Result.Continue && ctx.sourceManager.pos != backup.pos)
+            throw new Error(`Error at ${ctx.sourceManager.pos} "continue" status cannot modify execution stack!`)
 
         if (res === Result.NotParsed) {
             ctx.sourceManager.pos = backup.pos
@@ -32,7 +32,7 @@ export default class Utils {
         return res
     }
 
-    static handlePackrat<T>(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+    static handlePackrat<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         return lambda(ctx)
 
@@ -48,7 +48,7 @@ export default class Utils {
     }
 
     static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {
-        const pos = ctx.pos
+        const pos = ctx.sourceManager.pos
         ctx.builderManager.create()
 
         // run encapsulated lambda

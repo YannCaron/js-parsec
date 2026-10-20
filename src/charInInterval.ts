@@ -20,7 +20,7 @@ class CharInInterval<T> extends Parsem<T> {
     }
 
     parse(ctx: Context<T>): Result {
-        if (ctx.current != null && this._begin <= ctx.current.charCodeAt(0) && ctx.current.charCodeAt(0) <= this._end) {
+        if (ctx.sourceManager.current != null && this._begin <= ctx.sourceManager.current.charCodeAt(0) && ctx.sourceManager.current.charCodeAt(0) <= this._end) {
             ctx.next()
             return Result.Parsed
         }

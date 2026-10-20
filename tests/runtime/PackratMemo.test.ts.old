@@ -21,10 +21,10 @@ describe('Packrat memo table invariants', () => {
             ctx.setMemo(parsem, 0, entry.result, entry.pos)
 
             assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
-            assert.strictEqual(ctx.pos, 0)
-            assert.deepStrictEqual(ctx.tokens, [])
-            assert.deepStrictEqual(ctx.stack, [])
-            assert.strictEqual(ctx.buildersPos, 0)
+            assert.strictEqual(ctx.sourceManager.pos, 0)
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [])
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
+            assert.strictEqual(ctx.builderManager.pos, 0)
         })
     }
 
@@ -87,16 +87,16 @@ describe('Packrat memo table invariants', () => {
         for (const source of ['', 'a']) {
             const ctx = new Context<string>(source)
             const parsem = expression<string>(wordIs<string>('a'))
-            ctx.pos = source.length
+            ctx.sourceManager.pos = source.length
             const entry = { result: Result.Continue, pos: source.length }
 
-            ctx.setMemo(parsem, ctx.pos, entry.result, entry.pos)
+            ctx.setMemo(parsem, ctx.sourceManager.pos, entry.result, entry.pos)
 
-            assert.deepStrictEqual(ctx.getMemo(parsem, ctx.pos), entry)
-            assert.strictEqual(ctx.current, null)
-            assert.strictEqual(ctx.pos, source.length)
-            assert.deepStrictEqual(ctx.tokens, [])
-            assert.deepStrictEqual(ctx.stack, [])
+            assert.deepStrictEqual(ctx.getMemo(parsem, ctx.sourceManager.pos), entry)
+            assert.strictEqual(ctx.sourceManager.current, null)
+            assert.strictEqual(ctx.sourceManager.pos, source.length)
+            assert.deepStrictEqual(ctx.tokenManager.tokens, [])
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
         }
     })
 
@@ -107,23 +107,23 @@ describe('Packrat memo table invariants', () => {
 
         const result = Utils.handleBackup(ctx, current => {
             current.next()
-            current._stack.push('discarded')
+            current.productionManager._stack.push('discarded')
             current.setMemo(parsem, 0, entry.result, entry.pos)
 
             return Result.NotParsed
         })
 
         assert.strictEqual(result, Result.NotParsed)
-        assert.strictEqual(ctx.pos, 0)
-        assert.deepStrictEqual(ctx.tokens, [])
-        assert.deepStrictEqual(ctx.stack, [])
+        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [])
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
         assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
     })
 
     test('memo access leaves an active capture and preceding semantic values intact', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
-        ctx._stack.push('prefix')
+        ctx.productionManager._stack.push('prefix')
         const entry = { result: Result.Parsed, pos: 1 }
 
         const result = Utils.handleTProduction(ctx, current => {
@@ -131,21 +131,21 @@ describe('Packrat memo table invariants', () => {
             current.setMemo(parsem, 0, entry.result, entry.pos)
 
             assert.deepStrictEqual(current.getMemo(parsem, 0), entry)
-            assert.strictEqual(current.pos, 1)
-            assert.strictEqual(current.buildersPos, 1)
-            assert.strictEqual(current.builderPos, 1)
-            assert.deepStrictEqual(current.stack, ['prefix'])
-            assert.deepStrictEqual(current.tokens, [])
+            assert.strictEqual(current.sourceManager.pos, 1)
+            assert.strictEqual(current.builderManager.pos, 1)
+            assert.strictEqual(current.builderManager.builderPos, 1)
+            assert.deepStrictEqual(current.productionManager.stack, ['prefix'])
+            assert.deepStrictEqual(current.tokenManager.tokens, [])
             current.next()
 
             return Result.Parsed
         }, value => value, TokenType.STRING)
 
         assert.strictEqual(result, Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        assert.deepStrictEqual(ctx.result, ['prefix', 'ab'])
-        assert.deepStrictEqual(ctx.tokens, [new Token('ab', 0, TokenType.STRING)])
-        assert.strictEqual(ctx.buildersPos, 0)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.result, ['prefix', 'ab'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ab', 0, TokenType.STRING)])
+        assert.strictEqual(ctx.builderManager.pos, 0)
     })
 })
 
@@ -169,16 +169,16 @@ describe('Packrat helper integration invariants', () => {
 
             assert.strictEqual(result, expected)
             assert.strictEqual(calls, 1)
-            assert.strictEqual(ctx.pos, finalPos)
+            assert.strictEqual(ctx.sourceManager.pos, finalPos)
             assert.deepStrictEqual(ctx.getMemo(parsem, 0), {
                 result: expected,
                 pos: finalPos
             })
 
-            ctx.pos = 0
+            ctx.sourceManager.pos = 0
             assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected)
             assert.strictEqual(calls, 1)
-            assert.strictEqual(ctx.pos, finalPos)
+            assert.strictEqual(ctx.sourceManager.pos, finalPos)
         })
     }
 
@@ -195,18 +195,18 @@ describe('Packrat helper integration invariants', () => {
         assert.strictEqual(first.constructor, second.constructor)
         assert.strictEqual(first.toString(), second.toString())
         assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.pos, 2)
-        ctx.pos = 0
+        assert.strictEqual(ctx.sourceManager.pos, 2)
+        ctx.sourceManager.pos = 0
         assert.strictEqual(Utils.handlePackrat(second, ctx, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.strictEqual(calls, 3)
 
         for (const [parsem, startPos] of [[first, 0], [first, 1], [second, 0]] as const) {
-            ctx.pos = startPos
+            ctx.sourceManager.pos = startPos
             assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), Result.Parsed)
-            assert.strictEqual(ctx.pos, startPos + 1)
+            assert.strictEqual(ctx.sourceManager.pos, startPos + 1)
         }
         assert.strictEqual(calls, 3)
     })
@@ -223,14 +223,14 @@ describe('Packrat helper integration invariants', () => {
 
         contexts.forEach((ctx, index) => {
             assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
-            assert.strictEqual(ctx.pos, expected[index] === Result.Parsed ? 1 : 0)
+            assert.strictEqual(ctx.sourceManager.pos, expected[index] === Result.Parsed ? 1 : 0)
         })
         assert.strictEqual(calls, contexts.length)
 
         contexts.forEach((ctx, index) => {
-            ctx.pos = 0
+            ctx.sourceManager.pos = 0
             assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
-            assert.strictEqual(ctx.pos, expected[index] === Result.Parsed ? 1 : 0)
+            assert.strictEqual(ctx.sourceManager.pos, expected[index] === Result.Parsed ? 1 : 0)
         })
         assert.strictEqual(calls, contexts.length)
     })
@@ -249,13 +249,13 @@ describe('Packrat helper integration invariants', () => {
         assert.strictEqual(calls, 1)
         assert.strictEqual(ctx.getMemo(parsem, 0), undefined)
 
-        ctx.pos = 0
+        ctx.sourceManager.pos = 0
         assert.strictEqual(Utils.handlePackrat(parsem, ctx, current => {
             calls++
             return parsem.parse(current)
         }), Result.Parsed)
         assert.strictEqual(calls, 2)
-        assert.strictEqual(ctx.pos, 1)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.getMemo(parsem, 0), { result: Result.Parsed, pos: 1 })
     })
 
@@ -263,9 +263,9 @@ describe('Packrat helper integration invariants', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
         ctx.next()
-        ctx._stack.push('prefix')
+        ctx.productionManager._stack.push('prefix')
         ctx.setMemo(parsem, 1, Result.Parsed, 0)
-        const tokens = ctx.tokens
+        const tokens = ctx.tokenManager.tokens
         let calls = 0
 
         assert.throws(() => Utils.handlePackrat(parsem, ctx, () => {
@@ -273,8 +273,8 @@ describe('Packrat helper integration invariants', () => {
             return Result.Parsed
         }), /Corrupted memo/)
         assert.strictEqual(calls, 0)
-        assert.strictEqual(ctx.pos, 1)
-        assert.deepStrictEqual(ctx.tokens, tokens)
-        assert.deepStrictEqual(ctx.stack, ['prefix'])
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens, tokens)
+        assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
     })
 })

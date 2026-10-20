@@ -79,13 +79,13 @@ describe('sequence backup', () => {
     test('sequence that parse should be positioned at end', () => {
         const ctx = new Context("ab")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 2)
+        assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
     test('sequence that does not parse should be positioned at begining', () => {
         const ctx = new Context("ac")
         parser.parse(ctx)
-        assert.strictEqual(ctx.pos, 0)
+        assert.strictEqual(ctx.sourceManager.pos, 0)
     })
 
 })

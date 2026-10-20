@@ -28,6 +28,26 @@ Install it from NPM: `npm install --save @cyann/js-parsec`
 >
 > ... and much more :wink: ...
 
+## Runtime context
+
+`Context` exposes runtime state through four managers:
+
+| Manager | State and operations |
+| --- | --- |
+| `sourceManager` | `pos`, `current`, `enhancedSource`, `next()`, `assertComplete()` |
+| `tokenManager` | `tokens`, `pos`, `create()`, `append()`, `consume()` |
+| `builderManager` | `current`, `pos`, `builderPos`, `create()`, `append()`, `consume()` |
+| `productionManager` | `stack`, `pos`, `result`, `uniqueResult`, `append()`, `consume()`, `restore()`, `produce()` |
+
+Use `ctx.sourceManager.pos`, `ctx.tokenManager.tokens` and
+`ctx.productionManager.result` instead of the removed `Context` properties.
+`Context.next()` coordinates source advancement with token creation and captures.
+Reading `productionManager.result` still rejects a partially parsed source;
+reading `productionManager.stack` returns the current values without that check.
+`uniqueResult` preserves its previous behavior, including returning a single
+produced value directly. A standalone `ProductionManager` receives its
+`SourceManager` in its constructor.
+
 ## Arithmetic example
 
 Here is a complete example of arithmetic calculator:
@@ -90,7 +110,7 @@ A.ref =
 // now use it!
 const ctx = new Context('(2+3)*4')
 A.parse(ctx)
-console.log('result:', ctx.result); // result: 20
+console.log('result:', ctx.productionManager.result); // result: 20
 ```
 That's it, no need to define and maintain some definition files outside of the project and in different languages, everything is embeded, typed and compiled :relaxed:.
 

@@ -3,6 +3,15 @@
 `npm test` utilise `node:test` sur les sources TypeScript. `npm run build`
 compile la bibliothèque ; les tests ne font pas partie de cette compilation.
 
+Les tests actifs utilisent les managers de `Context` pour lire la source, les
+tokens, captures et productions. `runtime/Managers.test.ts` vérifie les quatre
+accesseurs publics et le refus d’un résultat sur une source incomplète.
+
+Les deux fichiers Packrat ci-dessous sont actuellement archivés avec le suffixe
+`.old` et ne sont pas exécutés par `npm test`. `Utils.handlePackrat` reste un
+passage direct au callback ; les résultats de diagnostic qui suivent décrivent
+l’ancienne implémentation du cache.
+
 `PEGInvariants.test.ts` conserve les contrats du moteur actuel.
 `PackratInvariants.test.ts` vérifie les contrats Packrat décrits dans
 [peg-to-packrat.md](../peg-to-packrat.md), sans implémenter ni simuler un cache.

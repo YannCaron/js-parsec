@@ -62,32 +62,32 @@ describe('operator level grammar Expression', () => {
         const ctx = new Context<number>("1")
         assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        assert.deepStrictEqual(ctx.stack, [ 1 ])
-        assert.strictEqual(ctx.result, 1)
+        assert.deepStrictEqual(ctx.productionManager.stack, [ 1 ])
+        assert.strictEqual(ctx.productionManager.result, 1)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1*2")
         assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        assert.deepStrictEqual(ctx.stack, [ 2 ])
-        assert.strictEqual(ctx.result, 2)
+        assert.deepStrictEqual(ctx.productionManager.stack, [ 2 ])
+        assert.strictEqual(ctx.productionManager.result, 2)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("1+2*3-4")
         assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        assert.deepStrictEqual(ctx.stack, [ 3 ])
-        assert.strictEqual(ctx.result, 3)
+        assert.deepStrictEqual(ctx.productionManager.stack, [ 3 ])
+        assert.strictEqual(ctx.productionManager.result, 3)
     })
 
     test('product should parse arithmetic expression', () => {
         const ctx = new Context<number>("(1+2)*3-4")
         assert.strictEqual(A.parse(ctx), Result.Parsed)
 
-        assert.deepStrictEqual(ctx.stack, [ 5 ])
-        assert.strictEqual(ctx.result, 5)
+        assert.deepStrictEqual(ctx.productionManager.stack, [ 5 ])
+        assert.strictEqual(ctx.productionManager.result, 5)
     })
 
 })

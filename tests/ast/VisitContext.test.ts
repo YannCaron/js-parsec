@@ -72,7 +72,7 @@ describe('Backtracking', () => {
         const ctx = new Context(':=')
         grammar.parse(ctx)
 
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token(':=', 0, '')
         ])
     })
@@ -82,7 +82,7 @@ describe('Backtracking', () => {
         const ctx = new Context(':=')
         grammar.parse(ctx)
 
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token(':', 0, TokenType.PUNCTUATION),
             new Token('=', 1, TokenType.PUNCTUATION)
         ])

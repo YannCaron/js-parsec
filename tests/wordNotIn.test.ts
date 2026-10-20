@@ -19,7 +19,7 @@ describe('basic wordNotIs', () => {
         const parser = sequence(wordIs('/*'), repeat(optional(wordNotIn('*/'))), wordIs('*/'))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 23)
+        assert.strictEqual(ctx.sourceManager.pos, 23)
     })
     
     test('wordNotIs should parse "/* here is a comment */"', () => {
@@ -30,7 +30,7 @@ describe('basic wordNotIs', () => {
             wordIs('*/').productT(e => e))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ["/*", " here is a comment ", "*/"])
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(e => e.symbol), ["/*", " here is a comment ", "*/"])
     })
 
     test('wordNotIs should parse "my string"', () => {
@@ -41,7 +41,7 @@ describe('basic wordNotIs', () => {
             charIn('"').productT(e => e))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ['"', "my string", '"'])
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(e => e.symbol), ['"', "my string", '"'])
     })
         
     test('wordNotIs should parse "// comment"', () => {
@@ -51,7 +51,7 @@ describe('basic wordNotIs', () => {
             repeat(optional(wordNotIn('\n'))).productT(e => e))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.tokens.map(e => e.symbol), ["//", " comment"])
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(e => e.symbol), ["//", " comment"])
     })
 
 })
@@ -70,7 +70,7 @@ describe('wordNotIs state', () => {
         const parser = sequence(wordIs('x'), choice(repeat(wordNotIn('x')), wordIs('xax')), wordIs('x'))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 5)
+        assert.strictEqual(ctx.sourceManager.pos, 5)
     })
 
 })
@@ -89,7 +89,7 @@ describe('wordNotIn edge cases and invariants', () => {
         const parser = repeat(wordNotIn('x'))
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.pos, 3)
+        assert.strictEqual(ctx.sourceManager.pos, 3)
     })
 
     test('sequence(wordIs, wordNotIn) should not parse when stream ends after first token', () => {

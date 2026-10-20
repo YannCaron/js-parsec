@@ -18,13 +18,13 @@ describe('basic productT', () => {
     test('product should parse "a"', () => {
         const ctx = new Context<string>("a")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['a'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a'])
     })
 
     test('product should not parse "c"', () => {
         const ctx = new Context<string>("c")
         assert.strictEqual(parser.parse(ctx), Result.NotParsed)
-        assert.deepStrictEqual(ctx.stack, [])
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
     })
 
 })
@@ -36,19 +36,19 @@ describe('chain productT with optional', () => {
     test('product should parse "ab"', () => {
         const ctx = new Context<string>("ab")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a', 'b'])
     })
 
     test('product should parse "a b"', () => {
         const ctx = new Context<string>("a b")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a', 'b'])
     })
 
     test('product should parse "a  b"', () => {
         const ctx = new Context<string>("a  b")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['a', 'b'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a', 'b'])
     })
 
 })
@@ -63,7 +63,7 @@ describe('token productT', () => {
         const ctx = new Context("10 20 ")
         assert.strictEqual(G.parse(ctx), Result.Parsed)
 
-        assert.deepStrictEqual(ctx.tokens, [
+        assert.deepStrictEqual(ctx.tokenManager.tokens, [
             new Token('10', 0, TokenType.NUMBER),
             new Token(' ', 2, TokenType.PUNCTUATION),
             new Token('20', 3, TokenType.NUMBER),
@@ -80,13 +80,13 @@ describe('encapsulated productT', () => {
     test('product should parse "ab"', () => {
         const ctx = new Context("ab")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['ab'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['ab'])
     })
 
     test('product should parse "a  b"', () => {
         const ctx = new Context("a  b")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['  ', 'ab'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['  ', 'ab'])
     })
 
 })
@@ -97,7 +97,7 @@ describe('inline factory of productT', () => {
         const parser = charIn("a").or(charIn('b')).productT(s => s)
         const ctx = new Context<string>("a")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, ['a'])
+        assert.deepStrictEqual(ctx.productionManager.stack, ['a'])
     })
 
 })
@@ -110,7 +110,7 @@ describe('production of productT', () => {
     test('product should parse "2+2"', () => {
         const ctx = new Context("2+2")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, [2, 2])
+        assert.deepStrictEqual(ctx.productionManager.stack, [2, 2])
     })
 
 })
@@ -122,21 +122,21 @@ describe('falsy values in productT', () => {
         const parser = sequence(productT(num, v => Number(v)), charIn('+'), productT(num, v => Number(v)))
         const ctx = new Context("0+0")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, [0, 0])
+        assert.deepStrictEqual(ctx.productionManager.stack, [0, 0])
     })
 
     test('productT should preserve boolean false in stack', () => {
         const parser = charIn('f').productT(() => false)
         const ctx = new Context("f")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, [false])
+        assert.deepStrictEqual(ctx.productionManager.stack, [false])
     })
 
     test('productT should preserve empty string in stack', () => {
         const parser = charIn('a').productT(() => "")
         const ctx = new Context("a")
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.deepStrictEqual(ctx.stack, [""])
+        assert.deepStrictEqual(ctx.productionManager.stack, [""])
     })
 
 })
