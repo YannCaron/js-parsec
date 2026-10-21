@@ -2,6 +2,7 @@ import Context from "./runtime/Context.ts"
 import { Parsem, ParsemComposite } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
 import Utils from "./runtime/Utils.ts"
+import BackupHandler from "./runtime/BackupHandler.ts"
 
 class Choice<T> extends ParsemComposite<T> {
 
@@ -10,7 +11,7 @@ class Choice<T> extends ParsemComposite<T> {
         for (const child of this.children) {
             
             if (Utils.handlePackrat<T>(child, ctx,
-                ctx => Utils.handleBackup<T>(ctx, 
+                ctx => BackupHandler.handle<T>(ctx, 
                     ctx => child.parse(ctx))) === Result.Parsed) {
                     
                 return Result.Parsed

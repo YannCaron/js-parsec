@@ -1,4 +1,5 @@
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
+import BackupHandler from "./runtime/BackupHandler.ts"
 import Context from "./runtime/Context.ts"
 import { Result } from "./runtime/Result.ts"
 import Utils from "./runtime/Utils.ts"
@@ -8,7 +9,7 @@ class Repeat<T> extends ParsemDecorator<T> {
     parse(ctx: Context<T>): Result {
 
         return Utils.handlePackrat(this.decorated, ctx,
-            ctx => Utils.handleBackup(ctx, ctx => {
+            ctx => BackupHandler.handle(ctx, ctx => {
                 let res = Result.NotParsed
                 let hasNext = ctx.sourceManager.current != null
                 let parsedRes = this.decorated.parse(ctx)

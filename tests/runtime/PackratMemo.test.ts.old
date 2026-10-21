@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
+import BackupHandler from "./runtime/BackupHandler.ts"
 
 describe('Packrat memo table invariants', () => {
 
@@ -105,7 +106,7 @@ describe('Packrat memo table invariants', () => {
         const parsem = expression<string>(wordIs<string>('a'))
         const entry = { result: Result.Parsed, pos: 1 }
 
-        const result = Utils.handleBackup(ctx, current => {
+        const result = BackupHandler.handle(ctx, current => {
             current.next()
             current.productionManager._stack.push('discarded')
             current.setMemo(parsem, 0, entry.result, entry.pos)

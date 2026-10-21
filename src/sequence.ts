@@ -1,13 +1,13 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemComposite } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import Utils from "./runtime/Utils.ts"
+import BackupHandler from "./runtime/BackupHandler.ts"
 
 class Sequence<T> extends ParsemComposite<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Utils.handleBackup(ctx, ctx => this.doparse(ctx))
+        return BackupHandler.handle(ctx, ctx => this.doparse(ctx))
 
     }
 
