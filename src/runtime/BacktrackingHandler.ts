@@ -6,7 +6,7 @@ export default class BacktrackingHandler {
     static handle<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
         const backup = {
             pos: ctx.sourceManager.pos,
-            buildersPos: ctx.symbolManager.pos,
+            symbolPos: ctx.symbolManager.pos,
             builderPos: ctx.symbolManager.builderPos,
             tokensPos: ctx.tokenManager.pos,
             tapeLength: ctx.instructionTapeManager.length
@@ -20,7 +20,7 @@ export default class BacktrackingHandler {
 
         if (res === Result.NotParsed) {
             ctx.sourceManager.pos = backup.pos
-            ctx.symbolManager.pos = backup.buildersPos
+            ctx.symbolManager.pos = backup.symbolPos
             ctx.symbolManager.builderPos = backup.builderPos
             ctx.tokenManager.pos = backup.tokensPos
             ctx.instructionTapeManager.removeFrom(backup.tapeLength)
