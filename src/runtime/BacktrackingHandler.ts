@@ -1,7 +1,7 @@
 import Context from "./Context.ts"
 import { Result } from "./Result.ts"
 
-export default class BackupHandler {
+export default class BacktrackingHandler {
 
     static handle<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
         const backup = {

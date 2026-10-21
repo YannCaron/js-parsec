@@ -1,7 +1,7 @@
 import Context from "./runtime/Context.ts"
 import { Parsem } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import BackupHandler from "./runtime/BackupHandler.ts"
+import BacktrackingHandler from "./runtime/BacktrackingHandler.ts"
 
 class WordNotIn<T> extends Parsem<T> {
 
@@ -13,7 +13,7 @@ class WordNotIn<T> extends Parsem<T> {
     }
 
     parseWordNotIs(ctx: Context<T>, str: string) {
-        return BackupHandler.handle(ctx, ctx => {
+        return BacktrackingHandler.handle(ctx, ctx => {
             for (const chr of str) {
                 if (!ctx.sourceManager.current || chr !== ctx.sourceManager.current)
                     return Result.NotParsed
@@ -29,7 +29,7 @@ class WordNotIn<T> extends Parsem<T> {
         if (this._strs.isEmpty) return Result.Continue
         if (ctx.sourceManager.current === null) return Result.NotParsed
   
-        return BackupHandler.handle(ctx, ctx => {
+        return BacktrackingHandler.handle(ctx, ctx => {
 
             for (const str of this._strs) {
                 const result = this.parseWordNotIs(ctx, str)
