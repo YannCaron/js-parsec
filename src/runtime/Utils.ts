@@ -68,8 +68,7 @@ export default class Utils {
 
         ctx.tokenManager.append(token)
 
-        const product = (producer !== undefined) ? producer(symbol) : symbol as T
-        ctx.instructionTapeManager.append(new PushValueInstruction<T>(product))
+        ctx.instructionTapeManager.append(new PushValueInstruction<T>(symbol, producer))
 
         return Result.Parsed
     }

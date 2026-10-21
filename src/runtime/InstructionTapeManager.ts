@@ -9,19 +9,26 @@ abstract class Instruction<T> {
 
 export class PushValueInstruction<T> extends Instruction<T> {
 
-    private readonly _value: T
-
-    get value(): T {
-        return this._value
+    private readonly _symbol: string
+    private readonly _producer?: (v: string) => T
+    
+    get symbol() : string {
+        return this._symbol
     }
-
-    constructor(value: T) {
+    
+    public get producer() : ((v: string) => T) | undefined {
+        return this._producer
+    }
+    
+    constructor(symbol: string, producer?: (v: string) => T) {
         super()
-        this._value = value
+        this._symbol = symbol
+        this._producer = producer
     }
 
     apply(ctx: Context<T>): void {
-        ctx.productionManager.append(this._value)
+        const procuct = this._producer != undefined ? this._producer(this._symbol) : this._symbol as T
+        ctx.productionManager.append(procuct)
     }
 
 }
