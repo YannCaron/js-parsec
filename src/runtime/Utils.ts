@@ -25,12 +25,12 @@ export default class Utils {
 
     static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {
         const pos = ctx.sourceManager.pos
-        ctx.builderManager.create()
+        ctx.symbolManager.create()
 
         // run encapsulated lambda
         const res = lambda(ctx)
 
-        const builder = ctx.builderManager.consume()
+        const builder = ctx.symbolManager.consume()
 
         if (res !== Result.Parsed)
             return res

@@ -6,8 +6,8 @@ export default class BackupHandler {
     static handle<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
         const backup = {
             pos: ctx.sourceManager.pos,
-            buildersPos: ctx.builderManager.pos,
-            builderPos: ctx.builderManager.builderPos,
+            buildersPos: ctx.symbolManager.pos,
+            builderPos: ctx.symbolManager.builderPos,
             tokensPos: ctx.tokenManager.pos,
             tapeLength: ctx.instructionTapeManager.length
         }
@@ -20,8 +20,8 @@ export default class BackupHandler {
 
         if (res === Result.NotParsed) {
             ctx.sourceManager.pos = backup.pos
-            ctx.builderManager.pos = backup.buildersPos
-            ctx.builderManager.builderPos = backup.builderPos
+            ctx.symbolManager.pos = backup.buildersPos
+            ctx.symbolManager.builderPos = backup.builderPos
             ctx.tokenManager.pos = backup.tokensPos
             ctx.instructionTapeManager.removeFrom(backup.tapeLength)
         }

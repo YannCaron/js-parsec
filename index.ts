@@ -47,7 +47,7 @@ export {
     Context,
     SourceManager,
     TokenManager,
-    SymbolManager as BuilderManager,
+    SymbolManager,
     ProductionManager,
     Utils,
     Result,

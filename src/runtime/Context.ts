@@ -8,7 +8,7 @@ export default class Context<T> {
 
     private readonly _sourceManager: SourceManager
     private readonly _tokenManager: TokenManager
-    private readonly _builderManager: SymbolManager
+    private readonly _symbolManager: SymbolManager
     private readonly _instructionTapeManager: InstructionTapeManager<T>
     private readonly _productionManager: ProductionManager<T>
 
@@ -20,8 +20,8 @@ export default class Context<T> {
         return this._tokenManager
     }
 
-    get builderManager(): SymbolManager {
-        return this._builderManager
+    get symbolManager(): SymbolManager {
+        return this._symbolManager
     }
 
     get instructionTapeManager(): InstructionTapeManager<T> {
@@ -35,7 +35,7 @@ export default class Context<T> {
     constructor(src: string) {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
-        this._builderManager = new SymbolManager()
+        this._symbolManager = new SymbolManager()
         this._instructionTapeManager = new InstructionTapeManager()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
     }
@@ -45,8 +45,8 @@ export default class Context<T> {
 
         if (current === null) return
 
-        if (this.builderManager.current) {
-            this.builderManager.append(current)
+        if (this.symbolManager.current) {
+            this.symbolManager.append(current)
         } else {
             this.tokenManager.create(current, this.sourceManager.pos)
         }

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
-    BuilderManager,
     Context,
     ProductionManager,
     Result,
     SourceManager,
+    SymbolManager,
     Token,
     TokenManager,
     TokenType,
@@ -24,7 +24,7 @@ describe('Context managers', () => {
 
         assert.ok(ctx.sourceManager instanceof SourceManager)
         assert.ok(ctx.tokenManager instanceof TokenManager)
-        assert.ok(ctx.builderManager instanceof BuilderManager)
+        assert.ok(ctx.symbolManager instanceof SymbolManager)
         assert.ok(ctx.productionManager instanceof ProductionManager)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
         parser.build(ctx)
@@ -32,13 +32,13 @@ describe('Context managers', () => {
             .filter(([, descriptor]) => descriptor.get || descriptor.set)
             .map(([name]) => name).sort()
 
-        assert.deepStrictEqual(accessors, ['builderManager', 'productionManager', 'sourceManager', 'tokenManager'])
+        assert.deepStrictEqual(accessors, ['symbolManager', 'productionManager', 'sourceManager', 'tokenManager'])
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.strictEqual(ctx.sourceManager.current, 'c')
         assert.strictEqual(ctx.sourceManager.enhancedSource, 'ab[c]')
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ab', 0)])
         assert.deepStrictEqual(ctx.productionManager.stack, ['ab'])
-        assert.strictEqual(ctx.builderManager.pos, 0)
+        assert.strictEqual(ctx.symbolManager.pos, 0)
         assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
 
         ctx.next()
@@ -72,7 +72,7 @@ describe('Context managers', () => {
         parser.build(ctx)
         assert.strictEqual(ctx.sourceManager.pos, 3)
         assert.strictEqual(ctx.sourceManager.current, null)
-        assert.strictEqual(ctx.builderManager.pos, 0)
+        assert.strictEqual(ctx.symbolManager.pos, 0)
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('xac', 0, TokenType.STRING)])
         assert.deepStrictEqual(ctx.productionManager.stack, ['xac'])
         assert.strictEqual(ctx.productionManager.uniqueResult, 'xac')
@@ -94,8 +94,8 @@ describe('Context managers', () => {
         assert.strictEqual(inner.productionManager.result, 'xy')
         assert.deepStrictEqual(outer.tokenManager.tokens, [new Token('ab', 0)])
         assert.deepStrictEqual(inner.tokenManager.tokens, [new Token('xy', 0)])
-        assert.strictEqual(outer.builderManager.pos, 0)
-        assert.strictEqual(inner.builderManager.pos, 0)
+        assert.strictEqual(outer.symbolManager.pos, 0)
+        assert.strictEqual(inner.symbolManager.pos, 0)
     })
 
 })
