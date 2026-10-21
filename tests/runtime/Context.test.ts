@@ -18,6 +18,7 @@ describe('basic Context', () => {
     test('should parse "1,2,3,4"', () => {
         const ctx = new Context<number>("1,2,3,4")
         assert.strictEqual(A.parse(ctx), Result.Parsed)
+        A.build(ctx)
 
         assert.deepStrictEqual(ctx.productionManager.stack, [1, 2, 3, 4])
         assert.deepStrictEqual(ctx.productionManager.result, [1, 2, 3, 4])
@@ -40,6 +41,7 @@ describe('exception Context', () => {
     test('should not parse "1," and throw error', () => {
         const ctx = new Context<number>("1,")
         A.parse(ctx)
+        A.build(ctx)
         assert.throws(() => { return ctx.productionManager.result }, Error)
     })
 
@@ -52,6 +54,8 @@ describe('Context uniqueResult array preservation', () => {
         const parser = charIn('a').productT(() => ['first', 'second'])
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.deepStrictEqual(ctx.productionManager.uniqueResult, ['first', 'second'])
     })
 

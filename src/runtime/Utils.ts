@@ -13,7 +13,7 @@ export default class Utils {
             buildersPos: ctx.builderManager.pos,
             builderPos: ctx.builderManager.builderPos,
             tokensPos: ctx.tokenManager.pos,
-            stack: ctx.productionManager.stack
+            tapeLength: ctx.instructionTapeManager.length
         }
 
         // run encapsulated lambda
@@ -27,7 +27,7 @@ export default class Utils {
             ctx.builderManager.pos = backup.buildersPos
             ctx.builderManager.builderPos = backup.builderPos
             ctx.tokenManager.pos = backup.tokensPos
-            ctx.productionManager.restore(backup.stack)
+            ctx.instructionTapeManager.removeFrom(backup.tapeLength)
         }
 
         return res
@@ -70,9 +70,6 @@ export default class Utils {
 
         const product = (producer !== undefined) ? producer(symbol) : symbol as T
         ctx.instructionTapeManager.append(new PushValueInstruction<T>(product))
-        // TODO: remove
-        ctx.productionManager.append(product)
-
 
         return Result.Parsed
     }
@@ -81,20 +78,14 @@ export default class Utils {
 
         const tapeLength = ctx.instructionTapeManager.length
 
-        // TODO: remove
-        const startPos = ctx.productionManager.pos
-
         // run encapsulated lambda
         const res = lambda(ctx)
 
         if (res !== Result.Parsed || !producer)
             return res
 
-        const arity = nbArgs !== undefined ? nbArgs : ctx.instructionTapeManager.calculateStackDepth(startPos, producer)
+        const arity = nbArgs !== undefined ? nbArgs : ctx.instructionTapeManager.calculateStackDepth(tapeLength, producer)
         ctx.instructionTapeManager.append(new PushAggregatorInstruction<T>(arity, producer))
-
-        // TODO: remove
-        ctx.productionManager.produce(startPos, producer, nbArgs)
 
         return Result.Parsed
     }

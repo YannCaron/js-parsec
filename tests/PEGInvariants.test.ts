@@ -26,6 +26,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('x')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.productionManager.stack, ['first'])
     })
@@ -39,6 +41,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.deepStrictEqual(ctx.productionManager.stack, ['ac'])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [
@@ -66,6 +70,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<unknown>('1ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 3)
         assert.deepStrictEqual(ctx.productionManager.stack, [[1, 'a']])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [
@@ -86,6 +92,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.deepStrictEqual(ctx.productionManager.stack, ['ac'])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ac', 0, TokenType.STRING)])
     })
@@ -98,6 +106,8 @@ describe('PEG invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Continue)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 0)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [])
@@ -108,9 +118,12 @@ describe('PEG invariants', () => {
             productT(wordIs<string>('a'), value => value).type(TokenType.STRING),
             wordIs<string>('b')
         )
+        const parser = repeat(pair)
         const ctx = new Context<string>('abac')
 
-        assert.strictEqual(repeat(pair).parse(ctx), Result.Parsed)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.strictEqual(ctx.sourceManager.current, 'a')
         assert.deepStrictEqual(ctx.productionManager.stack, ['a'])
@@ -125,10 +138,13 @@ describe('PEG invariants', () => {
             parse(): Result { return Result.Parsed }
             toString(): string { return 'empty-success' }
         }
+        const parser = repeat(new EmptySuccess())
 
         const ctx = new Context<never>('x')
 
-        assert.throws(() => repeat(new EmptySuccess()).parse(ctx), /Infinite loop/)
+        assert.throws(() => parser.parse(ctx), /Infinite loop/)
+        parser.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 0)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [])
@@ -143,6 +159,8 @@ describe('PEG invariants', () => {
         const ctx = new Context('aaab')
 
         assert.strictEqual(recursive.parse(ctx), Result.Parsed)
+        recursive.build(ctx)
+
         assert.strictEqual(ctx.sourceManager.pos, 4)
         assert.doesNotThrow(() => ctx.productionManager.result)
     })
@@ -157,11 +175,13 @@ describe('PEG invariants', () => {
         )
         const parser = productNT(
             sequence(digit, digit, digit),
-            (head, ...tail) => [head, ...tail]
+            (...tail) => [...tail]
         )
         const ctx = new Context<number | number[]>('123')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+
         assert.deepStrictEqual(ctx.productionManager.stack, [[1, 2, 3]])
     })
 
@@ -176,14 +196,19 @@ describe('PEG invariants', () => {
             const ctx = new Context<unknown>('x')
 
             assert.strictEqual(parser.parse(ctx), Result.Parsed)
+            parser.build(ctx)
+
             assert.deepStrictEqual(ctx.productionManager.stack, [value])
         })
     }
 
     test('a successful prefix is not a successful complete parse', () => {
+        const parser = wordIs('a')
         const ctx = new Context('ab')
 
-        assert.strictEqual(wordIs('a').parse(ctx), Result.Parsed)
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
+        
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
     })

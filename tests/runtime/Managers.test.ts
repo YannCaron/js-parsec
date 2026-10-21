@@ -17,6 +17,7 @@ import {
 
 describe('Context managers', () => {
 
+    // TODO: @Codex, align it with the new managers topology
     test('exposes parsed state only through the four manager accessors', () => {
         const ctx = new Context<string>('abc')
         const parser = productT(wordIs<string>('ab'), value => value)
@@ -26,6 +27,7 @@ describe('Context managers', () => {
         assert.ok(ctx.builderManager instanceof BuilderManager)
         assert.ok(ctx.productionManager instanceof ProductionManager)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
         const accessors = Object.entries(Object.getOwnPropertyDescriptors(Context.prototype))
             .filter(([, descriptor]) => descriptor.get || descriptor.set)
             .map(([name]) => name).sort()
@@ -67,6 +69,7 @@ describe('Context managers', () => {
         const ctx = new Context<string>('xac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        parser.build(ctx)
         assert.strictEqual(ctx.sourceManager.pos, 3)
         assert.strictEqual(ctx.sourceManager.current, null)
         assert.strictEqual(ctx.builderManager.pos, 0)
@@ -80,11 +83,13 @@ describe('Context managers', () => {
         const innerParser = productT(wordIs<string>('xy'), value => value)
         const outerParser = productT(wordIs<string>('ab'), value => {
             assert.strictEqual(innerParser.parse(inner), Result.Parsed)
+            innerParser.build(inner)
             return value
         })
         const outer = new Context<string>('ab')
 
         assert.strictEqual(outerParser.parse(outer), Result.Parsed)
+        outerParser.build(outer)
         assert.strictEqual(outer.productionManager.result, 'ab')
         assert.strictEqual(inner.productionManager.result, 'xy')
         assert.deepStrictEqual(outer.tokenManager.tokens, [new Token('ab', 0)])

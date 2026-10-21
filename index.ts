@@ -7,7 +7,7 @@ import {
 import Context from './src/runtime/Context.ts'
 import SourceManager from './src/runtime/SourceManager.ts'
 import TokenManager from './src/runtime/TokenManager.ts'
-import BuilderManager from './src/runtime/BuilderManager.ts'
+import SymbolManager from './src/runtime/SymbolManager.ts'
 import ProductionManager from './src/runtime/ProductionManager.ts'
 import Utils from './src/runtime/Utils.ts'
 import { Result } from './src/runtime/Result.ts'
@@ -47,7 +47,7 @@ export {
     Context,
     SourceManager,
     TokenManager,
-    BuilderManager,
+    SymbolManager as BuilderManager,
     ProductionManager,
     Utils,
     Result,

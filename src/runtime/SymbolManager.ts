@@ -1,6 +1,6 @@
 import { Stack, StringBuilder } from '@cyann/js-commons'
 
-export default class BuilderManager {
+export default class SymbolManager {
 
     readonly _builders: Stack<StringBuilder>
 

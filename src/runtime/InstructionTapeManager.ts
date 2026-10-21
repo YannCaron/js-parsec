@@ -1,8 +1,9 @@
 import { Functions, Queue } from "@cyann/js-commons"
+import Context from "./Context.ts"
 
 abstract class Instruction<T> {
 
-    // TODO: apply to send to stack
+    abstract apply(ctx: Context<T>): void
 
 }
 
@@ -17,6 +18,10 @@ export class PushValueInstruction<T> extends Instruction<T> {
     constructor(value: T) {
         super()
         this._value = value
+    }
+
+    apply(ctx: Context<T>): void {
+        ctx.productionManager.append(this._value)
     }
 
 }
@@ -40,11 +45,26 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
         this._producer = producer
     }
 
+    apply(ctx: Context<T>): void {
+        const args = new Array<T>()
+        let count = this._arity
+
+        while (count > 0) {
+            const value = ctx.productionManager.consume()
+            if (value === undefined) break
+            args.unshift(value)
+            count--
+        }
+
+        const product = this._producer(...args)
+        ctx.productionManager.append(product)
+    }
+
 }
 
 export default class InstructionTapeManager<T> {
 
-    private _queue: Queue<Instruction<T>>
+    private readonly _queue: Queue<Instruction<T>>
 
     get queue(): Queue<Instruction<T>> {
         return this._queue
@@ -56,6 +76,12 @@ export default class InstructionTapeManager<T> {
 
     constructor() {
         this._queue = new Queue<Instruction<T>>
+    }
+
+    apply(ctx: Context<T>) {
+        for (const instruction of this.queue) {
+            instruction.apply(ctx)
+        }
     }
 
     append(instruction: Instruction<T>) {

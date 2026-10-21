@@ -6,6 +6,7 @@ export default class ProductionManager<T> {
     readonly _stack: Stack<T>
     private readonly _sourceManager: SourceManager
 
+    // TODO, remove
     get stack(): Array<T> {
         return [...this._stack]
     }
@@ -24,6 +25,7 @@ export default class ProductionManager<T> {
         if (this._stack.length === 1)
             return this._stack.last
 
+        // TODO return _stack and refactor tests
         return this.stack
     }
 
@@ -47,6 +49,9 @@ export default class ProductionManager<T> {
     }
 
     consume(): T | undefined {
+        if (this._stack.isEmpty)
+            throw new Error(`Production stack overflow!`)
+
         return this._stack.pop()
     }
 

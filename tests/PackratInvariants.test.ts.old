@@ -45,7 +45,9 @@ class CountedParsem<T> extends ParsemDecorator<T> {
 
 // Exercise the public parser entry point, including the Choice Packrat hook.
 function parseUnderTest<T>(parser: Parsem<T>, ctx: Context<T>): Result {
-    return parser.parse(ctx)
+    const res = parser.parse(ctx)
+    parser.build(ctx)
+    return res
 }
 
 describe('Packrat recognition memoization invariants', () => {

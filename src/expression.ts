@@ -30,8 +30,10 @@ class Expression<T> extends Parsem<T> {
     }
 
     parse(ctx: Context<T>): Result {
+
         return Utils.handleSeedGrowing(this, ctx,
             ctx => this.ref.parse(ctx))
+
     }
 
     toString(): string {

@@ -1,6 +1,6 @@
 import SourceManager from './SourceManager.ts'
 import TokenManager from './TokenManager.ts'
-import BuilderManager from './BuilderManager.ts'
+import SymbolManager from './SymbolManager.ts'
 import InstructionTapeManager from './InstructionTapeManager.ts'
 import ProductionManager from './ProductionManager.ts'
 
@@ -8,10 +8,8 @@ export default class Context<T> {
 
     private readonly _sourceManager: SourceManager
     private readonly _tokenManager: TokenManager
-    private readonly _builderManager: BuilderManager
+    private readonly _builderManager: SymbolManager
     private readonly _instructionTapeManager: InstructionTapeManager<T>
-    
-    // TODO: remove
     private readonly _productionManager: ProductionManager<T>
 
     get sourceManager(): SourceManager {
@@ -22,7 +20,7 @@ export default class Context<T> {
         return this._tokenManager
     }
 
-    get builderManager(): BuilderManager {
+    get builderManager(): SymbolManager {
         return this._builderManager
     }
 
@@ -37,7 +35,7 @@ export default class Context<T> {
     constructor(src: string) {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
-        this._builderManager = new BuilderManager()
+        this._builderManager = new SymbolManager()
         this._instructionTapeManager = new InstructionTapeManager()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
     }

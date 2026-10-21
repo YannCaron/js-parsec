@@ -45,8 +45,8 @@ A.ref = sequence(M, optional(repeat(sequence(choice(a, m), M).productNT<any>((l,
 // E = '(' A ')' | n
 E.ref = choice(sequence(charIn('('), A, charIn(')')), n)
 
-const ctx = new Context<number>("1+2*3-4")
+const { parsing, result } = A.evaluate("1+2*3-4")
 
-console.log(A.parse(ctx))
-console.log(ctx.productionManager.stack);
-console.log(ctx.instructionTapeManager.queue);
+console.log(parsing)
+console.log('stack: ', result);
+

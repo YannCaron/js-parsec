@@ -5,6 +5,20 @@ export abstract class Parsem<T> {
 
     abstract parse(ctx: Context<T>): Result
 
+    public build(ctx: Context<T>) {
+        ctx.instructionTapeManager.apply(ctx)
+    }
+
+    public evaluate(src: string): { parsing: Result, result: T[] } {
+        const ctx = new Context<T>(src)
+
+        const res = this.parse(ctx)
+
+        this.build(ctx)
+
+        return { parsing: res, result: ctx.productionManager.stack }
+    }
+
     abstract toString(): string
 
 }
