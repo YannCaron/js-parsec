@@ -5,6 +5,8 @@ export abstract class Instruction<T> {
 
     abstract apply(ctx: Context<T>): void
 
+    abstract get producer() : ((v: string) => T) | undefined
+
 }
 
 export class PushValueInstruction<T> extends Instruction<T> {
@@ -16,7 +18,7 @@ export class PushValueInstruction<T> extends Instruction<T> {
         return this._symbol
     }
     
-    public get producer() : ((v: string) => T) | undefined {
+    get producer() : ((v: string) => T) | undefined {
         return this._producer
     }
     
@@ -91,8 +93,8 @@ export default class InstructionTapeManager<T> {
         }
     }
 
-    append(instruction: Instruction<T>) {
-        this._queue.push(instruction)
+    append(...instruction: Array<Instruction<T>>) {
+        this._queue.pushAll(...instruction)
     }
 
     subTapeFrom(start: number): Array<Instruction<T>> {
