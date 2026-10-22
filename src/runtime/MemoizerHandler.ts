@@ -35,6 +35,10 @@ export default class MemoizerHandler<T> {
 
     handle(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
+        // avoid memoize in case of symbol building
+        if (ctx.symbolManager.pos > 0)
+            return lambda(ctx)
+        
         const pos = ctx.sourceManager.pos
         const memo = this.search(pos, parsem)
 
