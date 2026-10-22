@@ -2,17 +2,23 @@ import { Parsem } from "../Parsem.ts";
 import Context from "./Context.ts";
 import { Instruction } from "./InstructionTapeManager.ts";
 import { Result } from "./Result.ts";
+import type Token from "./Token.ts";
 
 type ResultEntry<T> = {
     newPos: number,
     res: Result,
-    tapDelta: Array<Instruction<T>>
+    tapDelta: Array<Instruction<T>>,
+    tokensDelta: Array<Token>
 }
 
 export default class MemoizerHandler<T> {
 
     private readonly _ctx: Context<T>
     private readonly _memoizer: Map<number, Map<Parsem<T>, ResultEntry<T>>>
+
+    get ctx(): Context<T> {
+        return this._ctx
+    }
 
     constructor(ctx: Context<T>) {
         this._ctx = ctx
@@ -43,19 +49,22 @@ export default class MemoizerHandler<T> {
         const memo = this.search(pos, parsem)
 
         if (memo !== undefined) {
-            const { newPos, res, tapDelta } = memo
+            const { newPos, res, tapDelta, tokensDelta } = memo
 
             ctx.sourceManager.pos = newPos
             ctx.instructionTapeManager.append(...tapDelta)
+            for (const token of tokensDelta) ctx.tokenManager.append(token)
             return res
         }
 
         const tapePos = ctx.instructionTapeManager.length
+        const tokenPos = ctx.tokenManager.pos
 
         const res = lambda(ctx)
 
         const tapDelta = ctx.instructionTapeManager.subTapeFrom(tapePos)
-        this.memoize(pos, parsem, { newPos: ctx.sourceManager.pos, res, tapDelta })
+        const tokensDelta = ctx.tokenManager.subTokensFrom(tokenPos)
+        this.memoize(pos, parsem, { newPos: ctx.sourceManager.pos, res, tapDelta, tokensDelta })
 
         return res;
     }

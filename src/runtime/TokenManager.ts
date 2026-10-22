@@ -29,6 +29,10 @@ export default class TokenManager {
         this._tokens.push(token)
     }
 
+    subTokensFrom(start: number): Array<Token> {
+        return this._tokens.slice(start)
+    }
+
     consume(): Token | undefined {
         return this._tokens.pop()
     }
