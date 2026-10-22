@@ -3,7 +3,7 @@ import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
 import Token from "./Token.ts"
-import { PushAggregatorInstruction, PushValueInstruction } from "./InstructionTapeManager.ts"
+import { PushAggregatorInstruction, PushValueInstruction } from "./manager/InstructionTapeManager.ts"
 
 export default class Utils {
 

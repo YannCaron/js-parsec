@@ -1,5 +1,5 @@
-import Token from './Token.ts'
-import { TokenType } from './TokenType.ts'
+import Token from '../Token.ts'
+import { TokenType } from '../TokenType.ts'
 
 export default class TokenManager {
 

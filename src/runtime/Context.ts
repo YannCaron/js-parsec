@@ -1,9 +1,9 @@
-import SourceManager from './SourceManager.ts'
-import TokenManager from './TokenManager.ts'
-import SymbolManager from './SymbolManager.ts'
-import InstructionTapeManager from './InstructionTapeManager.ts'
-import ProductionManager from './ProductionManager.ts'
-import MemoizerHandler from './MemoizerHandler.ts'
+import SourceManager from './manager/SourceManager.ts'
+import TokenManager from './manager/TokenManager.ts'
+import SymbolManager from './manager/SymbolManager.ts'
+import InstructionTapeManager from './manager/InstructionTapeManager.ts'
+import ProductionManager from './manager/ProductionManager.ts'
+import MemoizerHandler from './handler/MemoizerHandler.ts'
 
 export default class Context<T> {
 

@@ -1,5 +1,5 @@
 import { Functions, Queue } from "@cyann/js-commons"
-import Context from "./Context.ts"
+import Context from "../Context.ts"
 
 export abstract class Instruction<T> {
 

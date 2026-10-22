@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
-import BackupHandler from "./runtime/BackupHandler.ts"
+import BacktrackingHandler from '../../src/runtime/handler/BacktrackingHandler.ts'
+import { PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+
+type MemoEntry = NonNullable<ReturnType<Context<string>['memoizerHandler']['search']>>
+
+function memoEntry(res: Result, newPos: number, tokensDelta: Token[] = []): MemoEntry {
+    return { res, newPos, tokensDelta, instructionsDelta: [] }
+}
 
 describe('Packrat memo table invariants', () => {
 
@@ -9,23 +16,23 @@ describe('Packrat memo table invariants', () => {
         const ctx = new Context<string>('a')
         const parsem = expression<string>(wordIs<string>('a'))
 
-        assert.strictEqual(ctx.getMemo(parsem, 0), undefined)
-        assert.strictEqual(ctx.getMemo(parsem, 1), undefined)
+        assert.strictEqual(ctx.memoizerHandler.search(0, parsem), undefined)
+        assert.strictEqual(ctx.memoizerHandler.search(1, parsem), undefined)
     })
 
     for (const result of [Result.Parsed, Result.NotParsed, Result.Continue]) {
         test(`the memo table retains ${result} without changing the parsing state`, () => {
             const ctx = new Context<string>('a')
             const parsem = expression<string>(wordIs<string>('a'))
-            const entry = { result, pos: result === Result.Parsed ? 1 : 0 }
+            const entry = memoEntry(result, result === Result.Parsed ? 1 : 0)
 
-            ctx.setMemo(parsem, 0, entry.result, entry.pos)
+            ctx.memoizerHandler.memoize(0, parsem, entry)
 
-            assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
+            assert.deepStrictEqual(ctx.memoizerHandler.search(0, parsem), entry)
             assert.strictEqual(ctx.sourceManager.pos, 0)
             assert.deepStrictEqual(ctx.tokenManager.tokens, [])
             assert.deepStrictEqual(ctx.productionManager.stack, [])
-            assert.strictEqual(ctx.builderManager.pos, 0)
+            assert.strictEqual(ctx.symbolManager.pos, 0)
         })
     }
 
@@ -33,40 +40,40 @@ describe('Packrat memo table invariants', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
         const otherParsem = expression<string>(wordIs<string>('a'))
-        const first = { result: Result.Parsed, pos: 1 }
-        const second = { result: Result.NotParsed, pos: 1 }
-        const other = { result: Result.Continue, pos: 0 }
+        const first = memoEntry(Result.Parsed, 1)
+        const second = memoEntry(Result.NotParsed, 1)
+        const other = memoEntry(Result.Continue, 0)
 
         assert.strictEqual(parsem.constructor, otherParsem.constructor)
         assert.strictEqual(parsem.toString(), otherParsem.toString())
         assert.notStrictEqual(parsem, otherParsem)
 
-        ctx.setMemo(parsem, 0, first.result, first.pos)
-        ctx.setMemo(parsem, 1, second.result, second.pos)
-        ctx.setMemo(otherParsem, 0, other.result, other.pos)
+        ctx.memoizerHandler.memoize(0, parsem, first)
+        ctx.memoizerHandler.memoize(1, parsem, second)
+        ctx.memoizerHandler.memoize(0, otherParsem, other)
 
-        assert.deepStrictEqual(ctx.getMemo(parsem, 0), first)
-        assert.deepStrictEqual(ctx.getMemo(parsem, 1), second)
-        assert.deepStrictEqual(ctx.getMemo(otherParsem, 0), other)
-        assert.strictEqual(ctx.getMemo(otherParsem, 1), undefined)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(0, parsem), first)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(1, parsem), second)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(0, otherParsem), other)
+        assert.strictEqual(ctx.memoizerHandler.search(1, otherParsem), undefined)
     })
 
     test('replacing one memo entry preserves neighboring positions and keys', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
         const otherParsem = expression<string>(wordIs<string>('a'))
-        const neighbor = { result: Result.Continue, pos: 1 }
-        const other = { result: Result.NotParsed, pos: 0 }
-        const replacement = { result: Result.NotParsed, pos: 0 }
-        ctx.setMemo(parsem, 0, Result.Parsed, 1)
-        ctx.setMemo(parsem, 1, neighbor.result, neighbor.pos)
-        ctx.setMemo(otherParsem, 0, other.result, other.pos)
+        const neighbor = memoEntry(Result.Continue, 1)
+        const other = memoEntry(Result.NotParsed, 0)
+        const replacement = memoEntry(Result.NotParsed, 0)
+        ctx.memoizerHandler.memoize(0, parsem, memoEntry(Result.Parsed, 1))
+        ctx.memoizerHandler.memoize(1, parsem, neighbor)
+        ctx.memoizerHandler.memoize(0, otherParsem, other)
 
-        ctx.setMemo(parsem, 0, replacement.result, replacement.pos)
+        ctx.memoizerHandler.memoize(0, parsem, replacement)
 
-        assert.deepStrictEqual(ctx.getMemo(parsem, 0), replacement)
-        assert.deepStrictEqual(ctx.getMemo(parsem, 1), neighbor)
-        assert.deepStrictEqual(ctx.getMemo(otherParsem, 0), other)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(0, parsem), replacement)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(1, parsem), neighbor)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(0, otherParsem), other)
     })
 
     test('memo entries do not leak into another context, even with the same source', () => {
@@ -74,14 +81,14 @@ describe('Packrat memo table invariants', () => {
         const sameSource = new Context<string>('a')
         const otherSource = new Context<string>('b')
         const parsem = expression<string>(wordIs<string>('a'))
-        const success = { result: Result.Parsed, pos: 1 }
-        first.setMemo(parsem, 0, success.result, success.pos)
+        const success = memoEntry(Result.Parsed, 1)
+        first.memoizerHandler.memoize(0, parsem, success)
 
-        assert.strictEqual(sameSource.getMemo(parsem, 0), undefined)
-        assert.strictEqual(otherSource.getMemo(parsem, 0), undefined)
-        otherSource.setMemo(parsem, 0, Result.NotParsed, 0)
-        assert.deepStrictEqual(first.getMemo(parsem, 0), success)
-        assert.strictEqual(sameSource.getMemo(parsem, 0), undefined)
+        assert.strictEqual(sameSource.memoizerHandler.search(0, parsem), undefined)
+        assert.strictEqual(otherSource.memoizerHandler.search(0, parsem), undefined)
+        otherSource.memoizerHandler.memoize(0, parsem, memoEntry(Result.NotParsed, 0))
+        assert.deepStrictEqual(first.memoizerHandler.search(0, parsem), success)
+        assert.strictEqual(sameSource.memoizerHandler.search(0, parsem), undefined)
     })
 
     test('EOF is a valid memo position, including position zero in empty input', () => {
@@ -89,11 +96,11 @@ describe('Packrat memo table invariants', () => {
             const ctx = new Context<string>(source)
             const parsem = expression<string>(wordIs<string>('a'))
             ctx.sourceManager.pos = source.length
-            const entry = { result: Result.Continue, pos: source.length }
+            const entry = memoEntry(Result.Continue, source.length)
 
-            ctx.setMemo(parsem, ctx.sourceManager.pos, entry.result, entry.pos)
+            ctx.memoizerHandler.memoize(ctx.sourceManager.pos, parsem, entry)
 
-            assert.deepStrictEqual(ctx.getMemo(parsem, ctx.sourceManager.pos), entry)
+            assert.deepStrictEqual(ctx.memoizerHandler.search(ctx.sourceManager.pos, parsem), entry)
             assert.strictEqual(ctx.sourceManager.current, null)
             assert.strictEqual(ctx.sourceManager.pos, source.length)
             assert.deepStrictEqual(ctx.tokenManager.tokens, [])
@@ -104,12 +111,12 @@ describe('Packrat memo table invariants', () => {
     test('alternative rollback restores parsing state while retaining recognition entries', () => {
         const ctx = new Context<string>('a')
         const parsem = expression<string>(wordIs<string>('a'))
-        const entry = { result: Result.Parsed, pos: 1 }
+        const entry = memoEntry(Result.Parsed, 1)
 
-        const result = BackupHandler.handle(ctx, current => {
+        const result = BacktrackingHandler.handle(ctx, current => {
             current.next()
-            current.productionManager._stack.push('discarded')
-            current.setMemo(parsem, 0, entry.result, entry.pos)
+            current.instructionTapeManager.append(new PushValueInstruction('discarded'))
+            current.memoizerHandler.memoize(0, parsem, entry)
 
             return Result.NotParsed
         })
@@ -118,23 +125,24 @@ describe('Packrat memo table invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 0)
         assert.deepStrictEqual(ctx.tokenManager.tokens, [])
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assert.deepStrictEqual(ctx.getMemo(parsem, 0), entry)
+        assert.strictEqual(ctx.instructionTapeManager.length, 0)
+        assert.deepStrictEqual(ctx.memoizerHandler.search(0, parsem), entry)
     })
 
     test('memo access leaves an active capture and preceding semantic values intact', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
-        ctx.productionManager._stack.push('prefix')
-        const entry = { result: Result.Parsed, pos: 1 }
+        ctx.productionManager.append('prefix')
+        const entry = memoEntry(Result.Parsed, 1)
 
         const result = Utils.handleTProduction(ctx, current => {
             current.next()
-            current.setMemo(parsem, 0, entry.result, entry.pos)
+            current.memoizerHandler.memoize(0, parsem, entry)
 
-            assert.deepStrictEqual(current.getMemo(parsem, 0), entry)
+            assert.deepStrictEqual(current.memoizerHandler.search(0, parsem), entry)
             assert.strictEqual(current.sourceManager.pos, 1)
-            assert.strictEqual(current.builderManager.pos, 1)
-            assert.strictEqual(current.builderManager.builderPos, 1)
+            assert.strictEqual(current.symbolManager.pos, 1)
+            assert.strictEqual(current.symbolManager.builderPos, 1)
             assert.deepStrictEqual(current.productionManager.stack, ['prefix'])
             assert.deepStrictEqual(current.tokenManager.tokens, [])
             current.next()
@@ -144,16 +152,19 @@ describe('Packrat memo table invariants', () => {
 
         assert.strictEqual(result, Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
+        assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
+        assert.strictEqual(ctx.instructionTapeManager.length, 1)
+        ctx.instructionTapeManager.apply(ctx)
         assert.deepStrictEqual(ctx.productionManager.result, ['prefix', 'ab'])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ab', 0, TokenType.STRING)])
-        assert.strictEqual(ctx.builderManager.pos, 0)
+        assert.strictEqual(ctx.symbolManager.pos, 0)
     })
 })
 
-describe('Packrat helper integration invariants', () => {
+describe('Packrat handler integration invariants', () => {
 
     for (const expected of [Result.Parsed, Result.NotParsed, Result.Continue]) {
-        test(`handlePackrat caches ${expected} and restores its final position without evaluating twice`, () => {
+        test(`MemoizerHandler.handle caches ${expected} and restores its final position without evaluating twice`, () => {
             const ctx = new Context<string>('a')
             const parsem = expression<string>(wordIs<string>('a'))
             const finalPos = expected === Result.Parsed ? 1 : 0
@@ -166,20 +177,22 @@ describe('Packrat helper integration invariants', () => {
                 return expected
             }
 
-            const result = Utils.handlePackrat(parsem, ctx, evaluate)
+            const result = ctx.memoizerHandler.handle(parsem, evaluate)
 
             assert.strictEqual(result, expected)
             assert.strictEqual(calls, 1)
             assert.strictEqual(ctx.sourceManager.pos, finalPos)
-            assert.deepStrictEqual(ctx.getMemo(parsem, 0), {
-                result: expected,
-                pos: finalPos
-            })
+            const tokens = expected === Result.Parsed ? [new Token('a', 0, TokenType.DEFAULT)] : []
+            const memo = ctx.memoizerHandler.search(0, parsem)
+            assert.ok(memo)
+            assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(expected, finalPos, tokens))
 
             ctx.sourceManager.pos = 0
-            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected)
+            ctx.tokenManager.pos = 0
+            assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), expected)
             assert.strictEqual(calls, 1)
             assert.strictEqual(ctx.sourceManager.pos, finalPos)
+            assert.deepStrictEqual(ctx.tokenManager.tokens, tokens)
         })
     }
 
@@ -195,18 +208,18 @@ describe('Packrat helper integration invariants', () => {
 
         assert.strictEqual(first.constructor, second.constructor)
         assert.strictEqual(first.toString(), second.toString())
-        assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 1)
-        assert.strictEqual(Utils.handlePackrat(first, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         ctx.sourceManager.pos = 0
-        assert.strictEqual(Utils.handlePackrat(second, ctx, evaluate), Result.Parsed)
+        assert.strictEqual(ctx.memoizerHandler.handle(second, evaluate), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.strictEqual(calls, 3)
 
         for (const [parsem, startPos] of [[first, 0], [first, 1], [second, 0]] as const) {
             ctx.sourceManager.pos = startPos
-            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), Result.Parsed)
+            assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), Result.Parsed)
             assert.strictEqual(ctx.sourceManager.pos, startPos + 1)
         }
         assert.strictEqual(calls, 3)
@@ -223,14 +236,14 @@ describe('Packrat helper integration invariants', () => {
         }
 
         contexts.forEach((ctx, index) => {
-            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
+            assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), expected[index])
             assert.strictEqual(ctx.sourceManager.pos, expected[index] === Result.Parsed ? 1 : 0)
         })
         assert.strictEqual(calls, contexts.length)
 
         contexts.forEach((ctx, index) => {
             ctx.sourceManager.pos = 0
-            assert.strictEqual(Utils.handlePackrat(parsem, ctx, evaluate), expected[index])
+            assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), expected[index])
             assert.strictEqual(ctx.sourceManager.pos, expected[index] === Result.Parsed ? 1 : 0)
         })
         assert.strictEqual(calls, contexts.length)
@@ -242,34 +255,40 @@ describe('Packrat helper integration invariants', () => {
         const failure = new Error('producer failed')
         let calls = 0
 
-        assert.throws(() => Utils.handlePackrat(parsem, ctx, current => {
+        assert.throws(() => ctx.memoizerHandler.handle(parsem, current => {
             calls++
             current.next()
             throw failure
         }), error => error === failure)
         assert.strictEqual(calls, 1)
-        assert.strictEqual(ctx.getMemo(parsem, 0), undefined)
+        assert.strictEqual(ctx.memoizerHandler.search(0, parsem), undefined)
 
         ctx.sourceManager.pos = 0
-        assert.strictEqual(Utils.handlePackrat(parsem, ctx, current => {
+        ctx.tokenManager.pos = 0
+        assert.strictEqual(ctx.memoizerHandler.handle(parsem, current => {
             calls++
             return parsem.parse(current)
         }), Result.Parsed)
         assert.strictEqual(calls, 2)
         assert.strictEqual(ctx.sourceManager.pos, 1)
-        assert.deepStrictEqual(ctx.getMemo(parsem, 0), { result: Result.Parsed, pos: 1 })
+        const memo = ctx.memoizerHandler.search(0, parsem)
+        assert.ok(memo)
+        assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(Result.Parsed, 1, [new Token('a', 0, TokenType.DEFAULT)]))
     })
 
     test('a memo entry ending before its starting position is rejected without rewinding', () => {
         const ctx = new Context<string>('ab')
         const parsem = expression<string>(wordIs<string>('a'))
         ctx.next()
-        ctx.productionManager._stack.push('prefix')
-        ctx.setMemo(parsem, 1, Result.Parsed, 0)
+        ctx.productionManager.append('prefix')
+        ctx.memoizerHandler.memoize(1, parsem, {
+            ...memoEntry(Result.Parsed, 0, [new Token('invalid', 1)]),
+            instructionsDelta: [new PushValueInstruction('invalid')]
+        })
         const tokens = ctx.tokenManager.tokens
         let calls = 0
 
-        assert.throws(() => Utils.handlePackrat(parsem, ctx, () => {
+        assert.throws(() => ctx.memoizerHandler.handle(parsem, () => {
             calls++
             return Result.Parsed
         }), /Corrupted memo/)
@@ -277,5 +296,6 @@ describe('Packrat helper integration invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.tokenManager.tokens, tokens)
         assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
+        assert.strictEqual(ctx.instructionTapeManager.length, 0)
     })
 })

@@ -44,14 +44,21 @@ with `npm run dev -- "7+8"`).
 
 ## Runtime context
 
-`Context` exposes runtime state through four managers:
+`Context` exposes runtime state through five managers:
 
 | Manager | State and operations |
 | --- | --- |
 | `sourceManager` | `pos`, `current`, `enhancedSource`, `next()`, `assertComplete()` |
 | `tokenManager` | `tokens`, `pos`, `create()`, `append()`, `consume()` |
-| `builderManager` | `current`, `pos`, `builderPos`, `create()`, `append()`, `consume()` |
+| `symbolManager` | `current`, `pos`, `builderPos`, `create()`, `append()`, `consume()` |
+| `instructionTapeManager` | `queue`, `length`, `append()`, `apply()`, `removeFrom()` |
 | `productionManager` | `stack`, `pos`, `result`, `uniqueResult`, `append()`, `consume()`, `restore()`, `produce()` |
+
+Manager implementations live in `src/runtime/manager/`. Backtracking and
+memoization live in `src/runtime/handler/` (`BacktrackingHandler` and
+`MemoizerHandler`, exposed by `Context.memoizerHandler`). `Context`, `Token`,
+`TokenType`, `Result` and `Utils` remain in `src/runtime/`. Public imports from
+`@cyann/js-parsec` are unchanged; direct source imports use the new subdirectories.
 
 Use `ctx.sourceManager.pos`, `ctx.tokenManager.tokens` and
 `ctx.productionManager.result` instead of the removed `Context` properties.

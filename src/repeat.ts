@@ -1,5 +1,5 @@
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
-import BacktrackingHandler from "./runtime/BacktrackingHandler.ts"
+import BacktrackingHandler from "./runtime/handler/BacktrackingHandler.ts"
 import Context from "./runtime/Context.ts"
 import { Result } from "./runtime/Result.ts"
 

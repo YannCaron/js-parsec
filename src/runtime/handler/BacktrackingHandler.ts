@@ -1,5 +1,5 @@
-import Context from "./Context.ts"
-import { Result } from "./Result.ts"
+import Context from "../Context.ts"
+import { Result } from "../Result.ts"
 
 export default class BacktrackingHandler {
 

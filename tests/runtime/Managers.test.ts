@@ -14,8 +14,8 @@ import {
     sequence,
     wordIs
 } from '../../index.ts'
-import InstructionTapeManager from '../../src/runtime/InstructionTapeManager.ts'
-import MemoizerHandler from '../../src/runtime/MemoizerHandler.ts'
+import InstructionTapeManager from '../../src/runtime/manager/InstructionTapeManager.ts'
+import MemoizerHandler from '../../src/runtime/handler/MemoizerHandler.ts'
 
 describe('Context managers', () => {
 

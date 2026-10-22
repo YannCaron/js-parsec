@@ -15,7 +15,7 @@ import {
     sequence,
     wordIs
 } from '../index.ts'
-import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/InstructionTapeManager.ts'
+import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/InstructionTapeManager.ts'
 
 class CountedParsem<T> extends ParsemDecorator<T> {
 
