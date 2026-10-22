@@ -37,11 +37,9 @@ export default class MemoizerHandler<T> {
 
         const pos = ctx.sourceManager.pos
         const memo = this.search(pos, parsem)
-        console.log('search', pos, parsem.toString(), memo != null);
 
         if (memo !== undefined) {
             const { newPos, res, tapDelta } = memo
-            console.log('restore', pos, res, tapDelta, parsem.toString());
 
             ctx.sourceManager.pos = newPos
             ctx.instructionTapeManager.append(...tapDelta)
@@ -54,8 +52,6 @@ export default class MemoizerHandler<T> {
 
         const tapDelta = ctx.instructionTapeManager.subTapeFrom(tapePos)
         this.memoize(pos, parsem, { newPos: ctx.sourceManager.pos, res, tapDelta })
-
-        console.log('backup', pos, parsem.toString());
 
         return res;
     }
