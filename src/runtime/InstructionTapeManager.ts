@@ -1,7 +1,7 @@
 import { Functions, Queue } from "@cyann/js-commons"
 import Context from "./Context.ts"
 
-abstract class Instruction<T> {
+export abstract class Instruction<T> {
 
     abstract apply(ctx: Context<T>): void
 
