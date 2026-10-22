@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
-import BacktrackingHandler from '../../src/runtime/handler/BacktrackingHandler.ts'
 import { PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
 
 type MemoEntry = NonNullable<ReturnType<Context<string>['memoizerHandler']['search']>>
@@ -113,7 +112,7 @@ describe('Packrat memo table invariants', () => {
         const parsem = expression<string>(wordIs<string>('a'))
         const entry = memoEntry(Result.Parsed, 1)
 
-        const result = BacktrackingHandler.handle(ctx, current => {
+        const result = ctx.backtrackingHandler.handle(current => {
             current.next()
             current.instructionTapeManager.append(new PushValueInstruction('discarded'))
             current.memoizerHandler.memoize(0, parsem, entry)

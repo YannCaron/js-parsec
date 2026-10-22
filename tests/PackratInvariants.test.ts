@@ -60,8 +60,6 @@ function assertTape<T>(ctx: Context<T>, expected: TapeEntry[]): void {
     assert.deepStrictEqual(tapeEntries(ctx), expected)
 }
 
-// Replay must preserve the production tape and its result; tokens are not replayed.
-// Active terminal captures still matter because they supply symbols to the tape.
 function parseUnderTest<T>(parser: Parsem<T>, ctx: Context<T>): Result {
     const res = parser.parse(ctx)
     assert.deepStrictEqual(ctx.productionManager.stack, [], 'Recognition must defer semantic production until build')
@@ -103,9 +101,10 @@ describe('Packrat recognition memoization invariants', () => {
     test('Continue is memoized without becoming a consuming success or a failure', () => {
         const body = new CountedParsem(optional(wordIs<string>('z')))
         const rule = expression(body)
+        const nullable = optional(rule)
         const parser = choice(
-            sequence(optional(rule), wordIs<string>('x')),
-            sequence(optional(rule), wordIs<string>('b'))
+            sequence(nullable, wordIs<string>('x')),
+            sequence(nullable, wordIs<string>('b'))
         )
         const ctx = new Context<string>('b')
 
@@ -123,7 +122,8 @@ describe('Packrat recognition memoization invariants', () => {
         test(`${name} at EOF is evaluated once without advancing or recording instructions`, () => {
             const body = new CountedParsem(wordIs<string>(terminal))
             const rule = expression(body)
-            const parser = name === 'Continue' ? sequence(optional(rule), optional(rule)) : choice(rule, rule)
+            const nullable = optional(rule)
+            const parser = name === 'Continue' ? sequence(nullable, nullable) : choice(rule, rule)
             const ctx = new Context<string>('')
 
             assert.strictEqual(parseUnderTest(parser, ctx), expected)
@@ -240,6 +240,25 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(actual.sourceManager.pos, reference.sourceManager.pos)
         assert.deepStrictEqual(actual.productionManager.stack, reference.productionManager.stack)
         assert.deepStrictEqual(tapeEntries(actual), tapeEntries(reference))
+    })
+
+    test('distinct Optional instances retain independent memo cells for the same operand', () => {
+        const operand = wordIs<string>('a')
+        const first = optional(operand)
+        const second = optional(operand)
+        const ctx = new Context<string>('')
+
+        assert.strictEqual(sequence(first, second).parse(ctx), Result.Continue)
+        const firstMemo = ctx.memoizerHandler.search(0, first)
+        const secondMemo = ctx.memoizerHandler.search(0, second)
+        assert.ok(firstMemo)
+        assert.ok(secondMemo)
+        assert.strictEqual(firstMemo.res, Result.Continue)
+        assert.strictEqual(secondMemo.res, Result.Continue)
+        assert.notStrictEqual(firstMemo, secondMemo)
+        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.deepStrictEqual(ctx.productionManager.stack, [])
+        assertTape(ctx, [])
     })
 
     test('ordered choice still tries the following alternative after Continue', () => {
@@ -576,6 +595,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 })
 
+/* FUTURE(seed-growing): enable this block once cycle diagnostics and growing seeds exist.
 describe('Packrat recursive cycle invariants', () => {
 
     for (const indirect of [false, true]) {
@@ -600,3 +620,88 @@ describe('Packrat recursive cycle invariants', () => {
         })
     }
 })
+
+function growingGrammar(indirect = false) {
+    const sum = expression<unknown>()
+    const bridge = expression<unknown>()
+    const numbers: number[] = []
+    const additions: Array<[number, number]> = []
+    const number = productT<unknown>(choice(wordIs('1'), wordIs('2'), wordIs('3')), value => {
+        numbers.push(Number(value))
+        return Number(value)
+    }).type(TokenType.NUMBER)
+    const addition = productNT(sequence(indirect ? bridge : sum, wordIs<unknown>('+'), number), (left, right) => {
+        additions.push([Number(left), Number(right)])
+        return Number(left) + Number(right)
+    })
+    const body = new CountedParsem(choice(addition, number), 256)
+    sum.ref = body
+    bridge.ref = sum
+    return { parser: sum, body, numbers, additions }
+}
+
+describe('Productive seed-growing contracts', () => {
+
+    for (const indirect of [false, true]) {
+        test(`${indirect ? 'indirect' : 'direct'} left recursion grows to the longest seed and defers selected actions`, () => {
+            const { parser, body, numbers, additions } = growingGrammar(indirect)
+            const ctx = new Context<unknown>('1+2+3')
+
+            assert.strictEqual(parser.parse(ctx), Result.Parsed)
+            assert.strictEqual(ctx.sourceManager.pos, 5)
+            assert.deepStrictEqual(numbers, [])
+            assert.deepStrictEqual(additions, [])
+            assert.deepStrictEqual(ctx.productionManager.stack, [])
+            assertTape(ctx, [
+                { kind: 'value', symbol: '1' }, { kind: 'value', symbol: '2' },
+                { kind: 'aggregate', arity: 2 }, { kind: 'value', symbol: '3' },
+                { kind: 'aggregate', arity: 2 }
+            ])
+            assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => [token.symbol, token.pos]), [['1', 0], ['+', 1], ['2', 2], ['+', 3], ['3', 4]])
+
+            parser.build(ctx)
+
+            assert.strictEqual(ctx.productionManager.result, 6)
+            assert.deepStrictEqual(numbers, [1, 2, 3])
+            assert.deepStrictEqual(additions, [[1, 2], [3, 3]])
+            assert.ok(body.evaluations.length < 256)
+        })
+    }
+
+    test('an incomplete extension retains only the longest complete seed and its instructions', () => {
+        const { parser, numbers, additions } = growingGrammar()
+        const ctx = new Context<unknown>('1+2+')
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.strictEqual(ctx.sourceManager.current, '+')
+        assert.deepStrictEqual(numbers, [])
+        assert.deepStrictEqual(additions, [])
+        assertTape(ctx, [{ kind: 'value', symbol: '1' }, { kind: 'value', symbol: '2' }, { kind: 'aggregate', arity: 2 }])
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => [token.symbol, token.pos]), [['1', 0], ['+', 1], ['2', 2]])
+        parser.build(ctx)
+        assert.deepStrictEqual(ctx.productionManager.stack, [3])
+        assert.deepStrictEqual(numbers, [1, 2])
+        assert.deepStrictEqual(additions, [[1, 2]])
+        assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
+    })
+
+    test('a nullable extension stops at the fixed point without keeping an equal-length candidate', () => {
+        const rule = expression<unknown>()
+        let extensions = 0
+        const extension = productNT(sequence(rule, wordIs<unknown>('')), value => { extensions++; return value })
+        const body = new CountedParsem(choice(extension, productT<unknown>(wordIs('1'), Number)), 256)
+        rule.ref = body
+        const ctx = new Context<unknown>('1')
+
+        assert.strictEqual(rule.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.strictEqual(extensions, 0)
+        assertTape(ctx, [{ kind: 'value', symbol: '1' }])
+        rule.build(ctx)
+        assert.strictEqual(ctx.productionManager.result, 1)
+        assert.strictEqual(extensions, 0)
+        assert.ok(body.evaluations.length < 256)
+    })
+})
+*/

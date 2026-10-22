@@ -1,0 +1,176 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import { Context, Result, productNT, productT, sequence, wordIs } from '../../index.ts'
+import { Instruction, PushAggregatorInstruction, PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+
+describe('Instruction tape value and arity contracts', () => {
+
+    for (const [name, values] of [
+        ['first argument', [undefined, 1]],
+        ['last argument', [1, undefined]],
+        ['middle argument', [1, undefined, 2]],
+        ['every argument', [undefined, undefined]],
+        ['mixed falsy arguments', [0, false, undefined, '', null]],
+    ] as const) {
+        test(`a reduction preserves undefined as ${name}`, () => {
+            const ctx = new Context<unknown>('')
+            let calls = 0
+            ctx.productionManager.append('prefix')
+            ctx.instructionTapeManager.append(...values.map((value, index) => new PushValueInstruction<unknown>(String(index), () => value)))
+            ctx.instructionTapeManager.append(new PushAggregatorInstruction(values.length, (...args) => {
+                calls++
+                assert.deepStrictEqual(args, [...values])
+                return args
+            }))
+
+            ctx.instructionTapeManager.apply(ctx)
+
+            assert.strictEqual(calls, 1)
+            assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [...values]])
+        })
+    }
+
+    for (const arity of [undefined, 2]) {
+        test(`ProductNT preserves undefined with ${arity === undefined ? 'rest' : 'explicit'} arity`, () => {
+            let calls = 0
+            const parser = productNT(sequence(
+                productT<unknown>(wordIs('a'), () => 1),
+                productT<unknown>(wordIs('b'), () => undefined)
+            ), (...values) => { calls++; return values }, arity)
+            const ctx = new Context<unknown>('ab')
+            ctx.productionManager.append('prefix')
+
+            assert.strictEqual(parser.parse(ctx), Result.Parsed)
+            assert.strictEqual(calls, 0)
+            assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
+            parser.build(ctx)
+
+            assert.strictEqual(calls, 1)
+            assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [1, undefined]])
+        })
+    }
+
+    for (const arity of [-1, .5, 1.5, NaN, Infinity, -Infinity]) {
+        test(`an aggregator rejects invalid arity ${arity} before consuming values`, () => {
+            const ctx = new Context<unknown>('')
+            let calls = 0
+            ctx.productionManager.append('left')
+            ctx.productionManager.append('right')
+
+            assert.throws(() => {
+                const instruction = new PushAggregatorInstruction<unknown>(arity, (...values) => { calls++; return values })
+                instruction.apply(ctx)
+            }, error => error instanceof Error && /arity|argument|integer|entier/i.test(error.message))
+
+            assert.strictEqual(calls, 0)
+            assert.deepStrictEqual(ctx.productionManager.stack, ['left', 'right'])
+        })
+
+        test(`ProductNT rejects invalid explicit arity ${arity}`, () => {
+            let calls = 0
+            const ctx = new Context<unknown>('ab')
+
+            assert.throws(() => {
+                const parser = productNT(sequence(productT(wordIs('a')), productT(wordIs('b'))), (...values) => { calls++; return values }, arity)
+                parser.parse(ctx)
+                parser.build(ctx)
+            }, error => error instanceof Error && /arity|argument|integer|entier/i.test(error.message))
+
+            assert.strictEqual(calls, 0)
+        })
+    }
+
+    test('valid zero and fixed arities preserve the preceding stack and argument order', () => {
+        const ctx = new Context<unknown>('')
+        ctx.productionManager.append('prefix')
+        new PushAggregatorInstruction<unknown>(0, () => 4).apply(ctx)
+        new PushValueInstruction<unknown>('5', () => 5).apply(ctx)
+        new PushAggregatorInstruction<unknown>(2, (left, right) => [left, right]).apply(ctx)
+
+        assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [4, 5]])
+    })
+})
+
+type Operation = { kind: 'push'; value: number } | { kind: 'reduce'; arity: number }
+
+function referenceStack(operations: Operation[]): number[] {
+    const stack: number[] = []
+    for (const operation of operations) {
+        if (operation.kind === 'push') stack.push(operation.value)
+        else {
+            assert.ok(operation.arity <= stack.length)
+            const args = stack.slice(stack.length - operation.arity)
+            stack.length -= operation.arity
+            stack.push(args.reduce((sum, value) => sum + value, 0))
+        }
+    }
+    return stack
+}
+
+function nativeInstruction(operation: Operation): Instruction<number> {
+    return operation.kind === 'push'
+        ? new PushValueInstruction(String(operation.value), Number)
+        : new PushAggregatorInstruction(operation.arity, (...values) => values.reduce((sum, value) => sum + value, 0))
+}
+
+describe('Instruction tape model invariants', () => {
+
+    for (const seed of [1, 0x10203, 0xdeadbeef]) {
+        test(`append, truncate and replay match an independent stack model, seed ${seed}`, () => {
+            let randomState = seed
+            const random = () => randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0
+            const ctx = new Context<number>('')
+            const tape = ctx.instructionTapeManager
+            const operations: Operation[] = []
+            const actions = new Set<string>()
+            const rest = (...values: number[]) => values.length
+
+            for (let turn = 0; turn < 90; turn++) {
+                const depth = referenceStack(operations).length
+                if (turn % 3 === 1 || operations.length > 64) {
+                    const cut = random() % (operations.length + 1)
+                    operations.length = cut
+                    tape.removeFrom(cut)
+                    actions.add('truncate')
+                } else if (turn % 3 === 2 && operations.length) {
+                    const start = random() % operations.length
+                    const fragment = operations.slice(start)
+                    let available = depth
+                    const valid = fragment.every(operation => {
+                        if (operation.kind === 'push') { available++; return true }
+                        if (operation.arity > available) return false
+                        available += 1 - operation.arity
+                        return true
+                    })
+                    if (valid) {
+                        const instructions = tape.subTapeFrom(start)
+                        const saved = Array.from(instructions)
+                        tape.append(...instructions)
+                        operations.push(...fragment)
+                        assert.deepStrictEqual(Array.from(instructions), saved)
+                        actions.add('replay')
+                    }
+                } else {
+                    const operation: Operation = depth === 0 || random() % 2 === 0
+                        ? { kind: 'push', value: random() % 100 }
+                        : { kind: 'reduce', arity: random() % (depth + 1) }
+                    operations.push(operation)
+                    tape.append(nativeInstruction(operation))
+                    actions.add('append')
+                }
+
+                const expected = referenceStack(operations)
+                const cut = random() % (operations.length + 1)
+                assert.strictEqual(tape.length, operations.length)
+                assert.strictEqual(tape.calculateStackDepth(0, rest), expected.length)
+                assert.strictEqual(tape.calculateStackDepth(cut, rest), expected.length - referenceStack(operations.slice(0, cut)).length)
+
+                const execution = new Context<number>('')
+                execution.instructionTapeManager.append(...tape.queue)
+                execution.instructionTapeManager.apply(execution)
+                assert.deepStrictEqual(execution.productionManager.stack, expected, `seed=${seed}, turn=${turn}`)
+            }
+            assert.deepStrictEqual([...actions].sort(), ['append', 'replay', 'truncate'])
+        })
+    }
+})

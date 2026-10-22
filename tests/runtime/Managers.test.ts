@@ -16,10 +16,11 @@ import {
 } from '../../index.ts'
 import InstructionTapeManager from '../../src/runtime/manager/InstructionTapeManager.ts'
 import MemoizerHandler from '../../src/runtime/handler/MemoizerHandler.ts'
+import BacktrackingHandler from '../../src/runtime/handler/BacktrackingHandler.ts'
 
 describe('Context managers', () => {
 
-    test('exposes parsed state through the six runtime manager accessors', () => {
+    test('exposes parsed state through the seven runtime accessors', () => {
         const ctx = new Context<string>('abc')
         const parser = productT(wordIs<string>('ab'), value => value)
 
@@ -29,6 +30,7 @@ describe('Context managers', () => {
         assert.ok(ctx.instructionTapeManager instanceof InstructionTapeManager)
         assert.ok(ctx.productionManager instanceof ProductionManager)
         assert.ok(ctx.memoizerHandler instanceof MemoizerHandler)
+        assert.ok(ctx.backtrackingHandler instanceof BacktrackingHandler)
         assert.strictEqual(ctx.instructionTapeManager.length, 0)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
         assert.strictEqual(ctx.instructionTapeManager.length, 1)
@@ -39,6 +41,7 @@ describe('Context managers', () => {
             .map(([name]) => name).sort()
 
         assert.deepStrictEqual(accessors, [
+            'backtrackingHandler',
             'instructionTapeManager',
             'memoizerHandler',
             'productionManager',

@@ -3,69 +3,98 @@
 `npm test` utilise `node:test` sur les sources TypeScript. `npm run build`
 compile la bibliothèque ; les tests ne font pas partie de cette compilation.
 
-Les tests actifs utilisent les managers de `Context` pour lire la source, les
-tokens, captures et productions. `runtime/Managers.test.ts` vérifie les quatre
-accesseurs publics et le refus d’un résultat sur une source incomplète.
+~~~powershell
+npm.cmd test
+npm.cmd test -- tests/runtime/InstructionTapeInvariants.test.ts
+npm.cmd test -- tests/runtime/RecognitionStateInvariants.test.ts
+npm.cmd test -- tests/DifferentialInvariants.test.ts
+~~~
 
-Les deux fichiers Packrat ci-dessous sont actuellement archivés avec le suffixe
-`.old` et ne sont pas exécutés par `npm test`. `Utils.handlePackrat` reste un
-passage direct au callback ; les résultats de diagnostic qui suivent décrivent
-l’ancienne implémentation du cache.
+## Rôle de l’oracle
 
-`PEGInvariants.test.ts` conserve les contrats du moteur actuel.
-`PackratInvariants.test.ts` vérifie les contrats Packrat décrits dans
-[peg-to-packrat.md](../peg-to-packrat.md), sans implémenter ni simuler un cache.
-`runtime/PackratMemo.test.ts` utilise directement `Context.getMemo`,
-`Context.setMemo` et `Utils.handlePackrat`, avec leur API du commit `100107a` :
-les clés sont des instances de parseur, et `setMemo` reçoit séparément le
-statut et la position finale.
+Les tests actifs décrivent les invariants des fonctionnalités existantes. Ils
+restent actifs lorsqu’ils révèlent un défaut : perte de `undefined`, arité invalide
+acceptée, capture non refermée ou `Continue` avec effets font échouer la suite
+jusqu’à correction du moteur.
 
-Le cache est maintenant actif dans `Choice`, `Optional` et `Repeat`.
-Les 17 tests de table et de helper passent : identités, positions, trois
-statuts, hits sans nouvel appel du callback, contextes distincts, exceptions,
-entrées corrompues, rollback et neutralité des accès sur les captures.
+Les fonctionnalités absentes ont leurs tests complets dans des blocs
+`/* FUTURE(...) ... */`. Ces blocs ne sont ni exécutés ni comptés comme tests
+ignorés. Retirer le commentaire pour activer un groupe lorsque sa fonctionnalité
+devient disponible. Les tests n’injectent ni cache simulé ni adaptateur du moteur.
 
-Les 33 invariants de parsing sont des contrats actifs : 17 passent et 16
-échouent actuellement. Quatorze échecs exposent la perte de tokens, de
-captures ou de valeurs après un cache hit, ou la collision entre `Optional`
-et `Repeat` partageant un enfant. Les deux autres demandent un diagnostic
-de cycle sans progression ; `handleSeedGrowing` est encore préparatoire.
+| Fichier | Contrats |
+| --- | --- |
+| `PEGInvariants.test.ts` | Choix ordonné, rollback, captures, optionnels, progression des répétitions et productions |
+| `PackratInvariants.test.ts` | Reconnaissance mémoïsée, rejeu de la bande, captures et sémantique sélectionnée |
+| `runtime/PackratMemo.test.ts` | Table par contexte, identité et offset ; statuts, exceptions et positions corrompues |
+| `runtime/MemoizerHandler.test.ts` | Tokens et instructions rejoués après backtracking |
+| `runtime/Managers.test.ts` | Cinq managers, deux handlers, isolation et résultat complet |
+| `runtime/InstructionTapeInvariants.test.ts` | Valeurs particulières, arités et modèle de pile indépendant |
+| `runtime/RecognitionStateInvariants.test.ts` | Neutralité de Continue, rollback et fermeture des captures après exception |
+| `DifferentialInvariants.test.ts` | Petites grammaires comparées à un interpréteur indépendant |
 
-Deux tests comparent une règle partagée avec une grammaire équivalente utilisant
-des instances distinctes. Sur `ac`, le succès partagé perd la valeur et le
-token `a`. Sur `aa`, une répétition reprenant l'entrée de l'optionnel réussit
-à tort. Les assertions vérifient statut, position, pile et tokens, sans
-désactiver ni simuler le cache.
+Les accès passent par `Context.sourceManager`, `tokenManager`, `symbolManager`,
+`instructionTapeManager`, `productionManager`, `memoizerHandler` et
+`backtrackingHandler`. La table utilise `search(position, parser)`,
+`memoize(position, parser, entry)` et `handle(parser, callback)`, avec les champs
+`res`, `newPos`, `tokensDelta` et `instructionsDelta`.
 
-Les compteurs observent les évaluations réelles du corps des règles, par
-contexte et position. Les règles testées passent par `choice(rule)` ou
-`optional(rule)` pour solliciter les points de mémoïsation existants tout en
-préservant leur statut. Ils vérifient `Parsed`, `NotParsed`, `Continue`, EOF et
-la conservation du cache après retour arrière. La grammaire récursive
-`R = 'a' R 'b' | 'a' R 'c' | 'd'`, sur `aⁿe`, exige au plus `n + 1`
-évaluations de `R`, pour trois tailles d'entrée. Les cycles directs et
-indirects ont une garde de test de 32 évaluations : atteindre cette garde
-échoue, sans provoquer de dépassement de pile.
+Les tests de hits réutilisent la même instance d’`Optional`, puisque sa clé est
+maintenant l’opération elle-même. Un autre test vérifie que deux instances
+distinctes gardent des cellules indépendantes pour le même opérande.
 
-Les autres cas contrôlent l'identité des règles, les offsets, les contextes
-distincts, une nouvelle référence de grammaire entre deux contextes, la pile
-sémantique, les captures, les valeurs particulières, les arguments rest ou
-sans argument, les objets, les closures et les exceptions. Le comportement
-actuel de `Choice` et des productions sur `Continue` reste préservé.
+## Contrats actifs ajoutés
 
-`parseUnderTest` utilise l'entrée publique `parser.parse(ctx)`. Le cache
-doit conserver les effets observables d'une reconnaissance dans le contexte
-courant, pas seulement sa position finale. La table ne doit pas confondre
-la reconnaissance d'un enfant et celle de sa répétition complète.
+Une réduction consomme exactement son arité, même avec un argument `undefined`.
+Les tests placent cette valeur au début, au milieu, à la fin et parmi des valeurs
+falsy, dans la VM et via `ProductNT` avec arité explicite ou paramètres rest.
+Les valeurs précédant les arguments restent sur la pile.
 
-Pour exécuter uniquement les tests de table et de helper :
+Les arités négatives, fractionnaires, `NaN` et infinies doivent produire une erreur
+d’arité. L’instruction les refuse avant de consommer la pile ou d’appeler le
+producteur. Les arités valides zéro et deux servent de contrôle.
 
-```powershell
-npm.cmd test -- tests/runtime/PackratMemo.test.ts
-```
+Un `Continue` ne change ni curseur, ni tokens, ni bande, ni pile sémantique, ni
+profondeur/contenu des captures. Un parseur personnalisé qui viole ce contrat
+doit être signalé. Les tests de rollback préservent aussi les états préexistants.
 
-Cette suite ne prouve pas la complexité linéaire de tous les combinators.
-Les consultations des continuations de répétition, la durée de vie des
-cellules en cours et la mutation de grammaire pendant une session exigent
-encore une API du moteur. Le contrat des actions différées et les tests
-d'intégration des consommateurs restent à définir avec ce mode.
+Une exception de reconnaissance referme les captures ouvertes par `ProductT`,
+préserve la capture extérieure et propage la même erreur sans exécuter les
+producteurs. Ce contrat n’impose ni rollback complet du curseur ni réutilisation
+du contexte après l’erreur.
+
+## Références indépendantes
+
+Le modèle de bande manipule une liste de nombres, sans utiliser
+`ProductionManager` ni les effets déclarés des instructions pour établir
+l’attendu. Trois graines fixes pilotent chacune 90 ajouts, troncatures ou rejeux.
+Les valeurs exécutées et les profondeurs calculées sont comparées au modèle,
+y compris depuis un offset intermédiaire. Aucune assertion ne porte sur le temps.
+
+L’interpréteur différentiel utilise `startsWith`, des états locaux indépendants
+et une liste d’opérations sémantiques. Il ne consulte ni combinators ni cache.
+Il respecte les trois statuts du moteur, notamment le choix qui poursuit après
+`Continue`. Dix grammaires sont comparées sur toutes les chaînes de longueur
+0 à 4 de l’alphabet `a,b,c,x`, plus des cas Unicode, avec instances partagées puis
+distinctes. Les assertions portent sur statut, offset, tokens, bande, valeurs,
+ordre des appels et absence d’actions pendant la reconnaissance. Chaque scénario
+affiche le premier contre-exemple. Les offsets suivent les unités UTF-16 de JavaScript.
+
+## Contrats futurs en commentaire
+
+- `PackratInvariants.test.ts`, bloc `FUTURE(seed-growing)` : cycles directs/indirects
+  sans progression ; croissance productive directe/indirecte de `E = E '+' N | N`
+  sur `1+2+3` ; meilleur préfixe sur `1+2+` ; arrêt sur une extension nullable
+  sans progrès. Les actions restent différées et seules les instructions de la
+  dérivation retenue sont conservées. Des budgets bornent les évaluations si le
+  groupe est activé trop tôt.
+- `runtime/RecognitionStateInvariants.test.ts`, bloc `FUTURE(purge)` : proposition
+  d’API `memoizerHandler.purgeBefore(requestedPosition)`, encore absente. La limite
+  effective tient compte du curseur et de tous les points de reprise actifs.
+  Les tests protègent les positions courante/futures, les sauvegardes imbriquées,
+  les positions dupliquées, la libération après exception et l’isolation des
+  contextes. Adapter le nom si une autre entrée publique est retenue.
+
+Les tests actifs de cache exigent déjà sa conservation après un retour arrière.
+La future purge doit les respecter. Les compteurs de reconnaissance ne prouvent
+pas une complexité linéaire générale.
