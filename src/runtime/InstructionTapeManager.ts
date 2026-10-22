@@ -5,7 +5,9 @@ export abstract class Instruction<T> {
 
     abstract apply(ctx: Context<T>): void
 
-    abstract get producer() : ((v: string) => T) | undefined
+    abstract get stackEffect(): number
+
+    abstract get producer() : ((v: string) => T) | ((...v: Array<T>) => T) | undefined
 
 }
 
@@ -13,6 +15,10 @@ export class PushValueInstruction<T> extends Instruction<T> {
 
     private readonly _symbol: string
     private readonly _producer?: (v: string) => T
+
+    get stackEffect(): number {
+        return 1
+    }
     
     get symbol() : string {
         return this._symbol
@@ -39,6 +45,10 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 
     private readonly _arity: number
     private readonly _producer: (...v: Array<T>) => T
+
+    get stackEffect(): number {
+        return 1 - this._arity
+    }
 
     get arity(): number {
         return this._arity
@@ -74,6 +84,7 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 export default class InstructionTapeManager<T> {
 
     private readonly _queue: Queue<Instruction<T>>
+    private readonly _stackDepths: number[] = [0]
 
     get queue(): Queue<Instruction<T>> {
         return this._queue
@@ -93,27 +104,35 @@ export default class InstructionTapeManager<T> {
         }
     }
 
-    append(...instruction: Array<Instruction<T>>) {
-        this._queue.pushAll(...instruction)
+    append(...instructions: Array<Instruction<T>>): void {
+        let depth = this._stackDepths[this._stackDepths.length - 1]
+
+        for (const instruction of instructions) {
+            depth += instruction.stackEffect
+            this._queue.push(instruction)
+            this._stackDepths.push(depth)
+        }
     }
 
     subTapeFrom(start: number): Array<Instruction<T>> {
         return this._queue.slice(start)
     }
 
-    removeFrom(start: number) {
+    removeFrom(start: number): void {
         this._queue.splice(start)
+        this._stackDepths.length = start + 1
     }
 
     calculateStackDepth(startPos: number, producer: (...v: Array<T>) => T): number {
-        const delta = this._queue.length - startPos
         const producerArgs = Functions.extractArguments(producer)
         if (producerArgs.length === 0) return 0
-        const hasRest = Functions.hasRestArgument(producerArgs)
 
-        return hasRest ?
-            delta + producerArgs.length - 1 :
-            producerArgs.length
+        if (!Functions.hasRestArgument(producerArgs)) {
+            return producerArgs.length
+        }
+
+        const delta = this._stackDepths[this._stackDepths.length - 1] - this._stackDepths[startPos]
+        return delta + producerArgs.length - 1
     }
 
 }
