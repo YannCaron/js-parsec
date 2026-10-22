@@ -14,25 +14,38 @@ import {
     sequence,
     wordIs
 } from '../../index.ts'
+import InstructionTapeManager from '../../src/runtime/InstructionTapeManager.ts'
+import MemoizerHandler from '../../src/runtime/MemoizerHandler.ts'
 
 describe('Context managers', () => {
 
-    // TODO: @Codex, align it with the new managers topology
-    test('exposes parsed state only through the four manager accessors', () => {
+    test('exposes parsed state through the six runtime manager accessors', () => {
         const ctx = new Context<string>('abc')
         const parser = productT(wordIs<string>('ab'), value => value)
 
         assert.ok(ctx.sourceManager instanceof SourceManager)
         assert.ok(ctx.tokenManager instanceof TokenManager)
         assert.ok(ctx.symbolManager instanceof SymbolManager)
+        assert.ok(ctx.instructionTapeManager instanceof InstructionTapeManager)
         assert.ok(ctx.productionManager instanceof ProductionManager)
+        assert.ok(ctx.memoizerHandler instanceof MemoizerHandler)
+        assert.strictEqual(ctx.instructionTapeManager.length, 0)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.instructionTapeManager.length, 1)
+        assert.strictEqual(ctx.productionManager.pos, 0)
         parser.build(ctx)
         const accessors = Object.entries(Object.getOwnPropertyDescriptors(Context.prototype))
             .filter(([, descriptor]) => descriptor.get || descriptor.set)
             .map(([name]) => name).sort()
 
-        assert.deepStrictEqual(accessors, ['symbolManager', 'productionManager', 'sourceManager', 'tokenManager'])
+        assert.deepStrictEqual(accessors, [
+            'instructionTapeManager',
+            'memoizerHandler',
+            'productionManager',
+            'sourceManager',
+            'symbolManager',
+            'tokenManager'
+        ])
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.strictEqual(ctx.sourceManager.current, 'c')
         assert.strictEqual(ctx.sourceManager.enhancedSource, 'ab[c]')
@@ -88,7 +101,11 @@ describe('Context managers', () => {
         })
         const outer = new Context<string>('ab')
 
+        assert.notStrictEqual(outer.instructionTapeManager, inner.instructionTapeManager)
+        assert.notStrictEqual(outer.memoizerHandler, inner.memoizerHandler)
         assert.strictEqual(outerParser.parse(outer), Result.Parsed)
+        assert.strictEqual(outer.instructionTapeManager.length, 1)
+        assert.strictEqual(inner.instructionTapeManager.length, 0)
         outerParser.build(outer)
         assert.strictEqual(outer.productionManager.result, 'ab')
         assert.strictEqual(inner.productionManager.result, 'xy')
