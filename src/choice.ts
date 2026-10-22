@@ -1,7 +1,6 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemComposite } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import Utils from "./runtime/Utils.ts"
 import BacktrackingHandler from "./runtime/BacktrackingHandler.ts"
 
 class Choice<T> extends ParsemComposite<T> {
