@@ -211,7 +211,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const [instruction] = ctx.instructionTapeManager.queue
         assert.ok(instruction instanceof PushValueInstruction)
         assert.strictEqual(instruction.producer, producer)
-        assert.strictEqual(ctx.memoizerHandler.search(0, rule)?.tapDelta[0], instruction)
+        assert.strictEqual(ctx.memoizerHandler.search(0, rule)?.instructionsDelta[0], instruction)
 
         parser.build(ctx)
         assert.deepStrictEqual(calls, ['a'])

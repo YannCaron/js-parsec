@@ -25,8 +25,8 @@ export default class TokenManager {
         this.append(new Token(symbol, pos, type))
     }
 
-    append(token: Token): void {
-        this._tokens.push(token)
+    append(...token: Token[]): void {
+        this._tokens.push(...token)
     }
 
     subTokensFrom(start: number): Array<Token> {

@@ -7,8 +7,8 @@ import type Token from "./Token.ts";
 type ResultEntry<T> = {
     newPos: number,
     res: Result,
-    tapDelta: Array<Instruction<T>>,
-    tokensDelta: Array<Token>
+    tokensDelta: Token[]
+    instructionsDelta: Instruction<T>[],
 }
 
 export default class MemoizerHandler<T> {
@@ -45,11 +45,11 @@ export default class MemoizerHandler<T> {
         const memo = this.search(pos, parsem)
 
         if (memo !== undefined) {
-            const { newPos, res, tapDelta, tokensDelta } = memo
+            const { newPos, res, tokensDelta, instructionsDelta: instructionsDelta } = memo
 
             this._ctx.sourceManager.pos = newPos
-            this._ctx.instructionTapeManager.append(...tapDelta)
-            for (const token of tokensDelta) this._ctx.tokenManager.append(token)
+            this._ctx.tokenManager.append(...tokensDelta)
+            this._ctx.instructionTapeManager.append(...instructionsDelta)
             return res
         }
 
@@ -58,9 +58,9 @@ export default class MemoizerHandler<T> {
 
         const res = lambda(this._ctx)
 
-        const tapDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
+        const instructionsDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
         const tokensDelta = this._ctx.tokenManager.subTokensFrom(tokenPos)
-        this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, tapDelta, tokensDelta })
+        this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, tokensDelta, instructionsDelta })
 
         return res;
     }

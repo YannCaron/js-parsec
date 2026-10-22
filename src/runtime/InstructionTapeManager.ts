@@ -104,7 +104,7 @@ export default class InstructionTapeManager<T> {
         }
     }
 
-    append(...instructions: Array<Instruction<T>>): void {
+    append(...instructions: Instruction<T>[]): void {
         let depth = this._stackDepths[this._stackDepths.length - 1]
 
         for (const instruction of instructions) {
@@ -123,7 +123,7 @@ export default class InstructionTapeManager<T> {
         this._stackDepths.length = start + 1
     }
 
-    calculateStackDepth(startPos: number, producer: (...v: Array<T>) => T): number {
+    calculateStackDepth(startPos: number, producer: (...v: T[]) => T): number {
         const producerArgs = Functions.extractArguments(producer)
         if (producerArgs.length === 0) return 0
 
