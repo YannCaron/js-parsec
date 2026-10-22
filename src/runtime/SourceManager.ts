@@ -1,7 +1,7 @@
 export default class SourceManager {
 
-    readonly _src: string
-    _pos: number
+    private readonly _src: string
+    private _pos: number
 
     get pos(): number {
         return this._pos
