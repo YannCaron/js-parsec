@@ -16,10 +16,6 @@ export default class MemoizerHandler<T> {
     private readonly _ctx: Context<T>
     private readonly _memoizer: Map<number, Map<Parsem<T>, ResultEntry<T>>>
 
-    get ctx(): Context<T> {
-        return this._ctx
-    }
-
     constructor(ctx: Context<T>) {
         this._ctx = ctx
         this._memoizer = new Map<number, Map<Parsem<T>, ResultEntry<T>>>()
@@ -39,32 +35,32 @@ export default class MemoizerHandler<T> {
         parsems.set(parsem, memo)
     }
 
-    handle(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+    handle(parsem: Parsem<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         // avoid memoize in case of symbol building
-        if (ctx.symbolManager.pos > 0)
-            return lambda(ctx)
+        if (this._ctx.symbolManager.pos > 0)
+            return lambda(this._ctx)
         
-        const pos = ctx.sourceManager.pos
+        const pos = this._ctx.sourceManager.pos
         const memo = this.search(pos, parsem)
 
         if (memo !== undefined) {
             const { newPos, res, tapDelta, tokensDelta } = memo
 
-            ctx.sourceManager.pos = newPos
-            ctx.instructionTapeManager.append(...tapDelta)
-            for (const token of tokensDelta) ctx.tokenManager.append(token)
+            this._ctx.sourceManager.pos = newPos
+            this._ctx.instructionTapeManager.append(...tapDelta)
+            for (const token of tokensDelta) this._ctx.tokenManager.append(token)
             return res
         }
 
-        const tapePos = ctx.instructionTapeManager.length
-        const tokenPos = ctx.tokenManager.pos
+        const tapePos = this._ctx.instructionTapeManager.length
+        const tokenPos = this._ctx.tokenManager.pos
 
-        const res = lambda(ctx)
+        const res = lambda(this._ctx)
 
-        const tapDelta = ctx.instructionTapeManager.subTapeFrom(tapePos)
-        const tokensDelta = ctx.tokenManager.subTokensFrom(tokenPos)
-        this.memoize(pos, parsem, { newPos: ctx.sourceManager.pos, res, tapDelta, tokensDelta })
+        const tapDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
+        const tokensDelta = this._ctx.tokenManager.subTokensFrom(tokenPos)
+        this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, tapDelta, tokensDelta })
 
         return res;
     }

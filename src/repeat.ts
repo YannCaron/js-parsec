@@ -7,7 +7,7 @@ class Repeat<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return ctx.memoizerHandler.handle(this, ctx,
+        return ctx.memoizerHandler.handle(this,
             ctx => BacktrackingHandler.handle(ctx, ctx => {
                 let res = Result.NotParsed
                 let hasNext = ctx.sourceManager.current != null

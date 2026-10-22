@@ -2,12 +2,6 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Context, Result, Token, TokenType, choice, productT, sequence, wordIs } from '../../index.ts'
 
-test('memoizer exposes its owning context', () => {
-    const ctx = new Context<string>('a')
-
-    assert.strictEqual(ctx.memoizerHandler.ctx, ctx)
-})
-
 test('memoized terminal productions replay tokens and deferred instructions after backtracking', () => {
     const shared = choice(productT(wordIs<string>('a')).type(TokenType.STRING))
     const parser = choice(

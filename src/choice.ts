@@ -9,7 +9,7 @@ class Choice<T> extends ParsemComposite<T> {
 
         for (const child of this.children) {
 
-            if (ctx.memoizerHandler.handle(child, ctx,
+            if (ctx.memoizerHandler.handle(child,
                 ctx => BacktrackingHandler.handle<T>(ctx,
                     ctx => child.parse(ctx))) === Result.Parsed) {
 
