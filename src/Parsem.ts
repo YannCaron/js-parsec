@@ -9,14 +9,16 @@ export abstract class Parsem<T> {
         ctx.instructionTapeManager.apply(ctx)
     }
 
-    public evaluate(src: string): { parsing: Result, result: T[] } {
+    public evaluate(src: string): T[] | null {
         const ctx = new Context<T>(src)
 
         const res = this.parse(ctx)
+        if (res !== Result.Parsed)
+            return null
 
         this.build(ctx)
 
-        return { parsing: res, result: ctx.productionManager.stack }
+        return ctx.productionManager.stack
     }
 
     abstract toString(): string

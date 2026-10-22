@@ -3,6 +3,7 @@ import TokenManager from './TokenManager.ts'
 import SymbolManager from './SymbolManager.ts'
 import InstructionTapeManager from './InstructionTapeManager.ts'
 import ProductionManager from './ProductionManager.ts'
+import MemoizerHandler from './MemoizerHandler.ts'
 
 export default class Context<T> {
 
@@ -11,6 +12,7 @@ export default class Context<T> {
     private readonly _symbolManager: SymbolManager
     private readonly _instructionTapeManager: InstructionTapeManager<T>
     private readonly _productionManager: ProductionManager<T>
+    private readonly _memoizerHandler: MemoizerHandler<T>
 
     get sourceManager(): SourceManager {
         return this._sourceManager
@@ -32,12 +34,17 @@ export default class Context<T> {
         return this._productionManager
     }
 
+    get memoizerHandler(): MemoizerHandler<T> {
+        return this._memoizerHandler
+    }
+
     constructor(src: string) {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
         this._symbolManager = new SymbolManager()
         this._instructionTapeManager = new InstructionTapeManager()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
+        this._memoizerHandler = new MemoizerHandler<T>(this)
     }
 
     next() {

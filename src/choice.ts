@@ -9,11 +9,11 @@ class Choice<T> extends ParsemComposite<T> {
     parse(ctx: Context<T>): Result {
 
         for (const child of this.children) {
-            
-            if (Utils.handlePackrat<T>(child, ctx,
-                ctx => BacktrackingHandler.handle<T>(ctx, 
+
+            if (ctx.memoizerHandler.handle(child, ctx,
+                ctx => BacktrackingHandler.handle<T>(ctx,
                     ctx => child.parse(ctx))) === Result.Parsed) {
-                    
+
                 return Result.Parsed
             }
 

@@ -7,7 +7,7 @@ class Optional<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        const res = Utils.handlePackrat(this.decorated, ctx, 
+        const res = ctx.memoizerHandler.handle(this.decorated, ctx, 
             ctx => this.decorated.parse(ctx))
         
         if (res === Result.NotParsed)

@@ -7,14 +7,6 @@ import { PushAggregatorInstruction, PushValueInstruction } from "./InstructionTa
 
 export default class Utils {
 
-    static handlePackrat<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
-
-        const res = lambda(ctx)
-
-        return res;
-    }
-
-
     static handleSeedGrowing<T>(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
 
         const res = lambda(ctx)

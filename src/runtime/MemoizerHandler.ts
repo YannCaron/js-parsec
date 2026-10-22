@@ -1,34 +1,61 @@
-import { Parsem } from "../Parsem";
-import Context from "./Context";
-import { Instruction } from "./InstructionTapeManager";
-import { Result } from "./Result";
+import { Parsem } from "../Parsem.ts";
+import Context from "./Context.ts";
+import { Instruction } from "./InstructionTapeManager.ts";
+import { Result } from "./Result.ts";
 
-type Key<T> = { 
-    pos: number, 
-    parser: Parsem<T> 
-}
-
-type ResultEntry<T> = { 
-    newPos: number, 
-    result:Result,
+type ResultEntry<T> = {
+    newPos: number,
+    res: Result,
     tapDelta: Array<Instruction<T>>
 }
 
 export default class MemoizerHandler<T> {
 
-    private readonly _memoizer: Map<Key<T>, ResultEntry<T>>
+    private readonly _ctx: Context<T>
+    private readonly _memoizer: Map<number, Map<Parsem<T>, ResultEntry<T>>>
 
-    constructor() {
-        this._memoizer = new Map<Key<T>, ResultEntry<T>>()
+    constructor(ctx: Context<T>) {
+        this._ctx = ctx
+        this._memoizer = new Map<number, Map<Parsem<T>, ResultEntry<T>>>()
     }
 
-    handle(_parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+    search(pos: number, parsem: Parsem<T>): ResultEntry<T> | undefined {
+        return this._memoizer.get(pos)?.get(parsem)
+    }
+
+    memoize(pos: number, parsem: Parsem<T>, memo: ResultEntry<T>) {
+        let parsems = this._memoizer.get(pos)
+        if (parsems === undefined) {
+            parsems = new Map<Parsem<T>, ResultEntry<T>>()
+            this._memoizer.set(pos, parsems)
+        }
+
+        parsems.set(parsem, memo)
+    }
+
+    handle(parsem: Parsem<T>, ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+
+        const pos = ctx.sourceManager.pos
+        const memo = this.search(pos, parsem)
+        console.log('search', pos, parsem.toString(), memo != null);
+
+        if (memo !== undefined) {
+            const { newPos, res, tapDelta } = memo
+            console.log('restore', pos, res, tapDelta, parsem.toString());
+
+            ctx.sourceManager.pos = newPos
+            ctx.instructionTapeManager.append(...tapDelta)
+            return res
+        }
 
         const tapePos = ctx.instructionTapeManager.length
 
         const res = lambda(ctx)
 
-        const delta = ctx.instructionTapeManager.subTapeFrom(tapePos)
+        const tapDelta = ctx.instructionTapeManager.subTapeFrom(tapePos)
+        this.memoize(pos, parsem, { newPos: ctx.sourceManager.pos, res, tapDelta })
+
+        console.log('backup', pos, parsem.toString());
 
         return res;
     }

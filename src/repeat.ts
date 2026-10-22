@@ -2,13 +2,12 @@ import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import BacktrackingHandler from "./runtime/BacktrackingHandler.ts"
 import Context from "./runtime/Context.ts"
 import { Result } from "./runtime/Result.ts"
-import Utils from "./runtime/Utils.ts"
 
 class Repeat<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Utils.handlePackrat(this.decorated, ctx,
+        return ctx.memoizerHandler.handle(this.decorated, ctx,
             ctx => BacktrackingHandler.handle(ctx, ctx => {
                 let res = Result.NotParsed
                 let hasNext = ctx.sourceManager.current != null
