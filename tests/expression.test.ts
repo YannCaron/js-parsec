@@ -15,12 +15,9 @@ describe('Expression basic functions', () => {
 
     // n = [0-9]+
     const n = repeat(charIn('0123456789')).productT(v => Number(v))
-    // A = n ('+' n)*
-    const A = expression()
-    A.ref = n
 
     test('test toString', () => {
-        assert.strictEqual(A.toString(), "[0123456789]+")
+        assert.strictEqual(n.toString(), "[0123456789]+")
     })
 
 })
