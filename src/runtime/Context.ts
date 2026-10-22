@@ -4,6 +4,7 @@ import SymbolManager from './manager/SymbolManager.ts'
 import InstructionTapeManager from './manager/InstructionTapeManager.ts'
 import ProductionManager from './manager/ProductionManager.ts'
 import MemoizerHandler from './handler/MemoizerHandler.ts'
+import BacktrackingHandler from './handler/BacktrackingHandler.ts'
 
 export default class Context<T> {
 
@@ -12,6 +13,7 @@ export default class Context<T> {
     private readonly _symbolManager: SymbolManager
     private readonly _instructionTapeManager: InstructionTapeManager<T>
     private readonly _productionManager: ProductionManager<T>
+    private readonly _backtrackingHandler: BacktrackingHandler<T>
     private readonly _memoizerHandler: MemoizerHandler<T>
 
     get sourceManager(): SourceManager {
@@ -38,12 +40,17 @@ export default class Context<T> {
         return this._memoizerHandler
     }
 
+    get backtrackingHandler(): BacktrackingHandler<T> {
+        return this._backtrackingHandler
+    }
+
     constructor(src: string) {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
         this._symbolManager = new SymbolManager()
         this._instructionTapeManager = new InstructionTapeManager()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
+        this._backtrackingHandler = new BacktrackingHandler<T>(this)
         this._memoizerHandler = new MemoizerHandler<T>(this)
     }
 

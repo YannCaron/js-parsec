@@ -1,29 +1,35 @@
 import Context from "../Context.ts"
 import { Result } from "../Result.ts"
 
-export default class BacktrackingHandler {
+export default class BacktrackingHandler<T> {
 
-    static handle<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result): Result {
+    private readonly _ctx:Context<T>
+
+    constructor(ctx: Context<T>) {
+        this._ctx = ctx
+    }
+
+    handle(lambda: (ctx: Context<T>) => Result): Result {
         const backup = {
-            pos: ctx.sourceManager.pos,
-            symbolPos: ctx.symbolManager.pos,
-            builderPos: ctx.symbolManager.builderPos,
-            tokensPos: ctx.tokenManager.pos,
-            tapeLength: ctx.instructionTapeManager.length
+            pos: this._ctx.sourceManager.pos,
+            symbolPos: this._ctx.symbolManager.pos,
+            builderPos: this._ctx.symbolManager.builderPos,
+            tokensPos: this._ctx.tokenManager.pos,
+            tapeLength: this._ctx.instructionTapeManager.length
         }
 
         // run encapsulated lambda
-        const res = lambda(ctx)
+        const res = lambda(this._ctx)
 
-        if (res === Result.Continue && ctx.sourceManager.pos != backup.pos)
-            throw new Error(`Error at ${ctx.sourceManager.pos} "continue" status cannot modify execution stack!`)
+        if (res === Result.Continue && this._ctx.sourceManager.pos != backup.pos)
+            throw new Error(`Error at ${this._ctx.sourceManager.pos} "continue" status cannot modify execution stack!`)
 
         if (res === Result.NotParsed) {
-            ctx.sourceManager.pos = backup.pos
-            ctx.symbolManager.pos = backup.symbolPos
-            ctx.symbolManager.builderPos = backup.builderPos
-            ctx.tokenManager.pos = backup.tokensPos
-            ctx.instructionTapeManager.removeFrom(backup.tapeLength)
+            this._ctx.sourceManager.pos = backup.pos
+            this._ctx.symbolManager.pos = backup.symbolPos
+            this._ctx.symbolManager.builderPos = backup.builderPos
+            this._ctx.tokenManager.pos = backup.tokensPos
+            this._ctx.instructionTapeManager.removeFrom(backup.tapeLength)
         }
 
         return res

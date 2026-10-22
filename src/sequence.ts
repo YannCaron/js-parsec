@@ -1,13 +1,12 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemComposite } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import BacktrackingHandler from "./runtime/handler/BacktrackingHandler.ts"
 
 class Sequence<T> extends ParsemComposite<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return BacktrackingHandler.handle(ctx, ctx => this.doparse(ctx))
+        return ctx.backtrackingHandler.handle(ctx => this.doparse(ctx))
 
     }
 

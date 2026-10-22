@@ -1,7 +1,6 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemComposite } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import BacktrackingHandler from "./runtime/handler/BacktrackingHandler.ts"
 
 class Choice<T> extends ParsemComposite<T> {
 
@@ -10,7 +9,7 @@ class Choice<T> extends ParsemComposite<T> {
         for (const child of this.children) {
 
             if (ctx.memoizerHandler.handle(child,
-                ctx => BacktrackingHandler.handle<T>(ctx,
+                ctx => ctx.backtrackingHandler.handle(
                     ctx => child.parse(ctx))) === Result.Parsed) {
 
                 return Result.Parsed

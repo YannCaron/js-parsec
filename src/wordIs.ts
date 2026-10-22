@@ -1,7 +1,6 @@
 import Context from "./runtime/Context.ts"
 import { Parsem } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import BacktrackingHandler from "./runtime/handler/BacktrackingHandler.ts"
 
 class WordIs<T> extends Parsem<T> {
 
@@ -15,7 +14,7 @@ class WordIs<T> extends Parsem<T> {
     parse(ctx: Context<T>): Result {
         if (this._str === '') return Result.Continue
 
-        return BacktrackingHandler.handle(ctx, ctx => {
+        return ctx.backtrackingHandler.handle(ctx => {
             for (const chr of this._str) {
                 if (!ctx.sourceManager.current || chr !== ctx.sourceManager.current)
                     return Result.NotParsed
