@@ -24,11 +24,11 @@ export default class MemoizerHandler<T> {
         this._orderedIndex = new PriorityQueue<number>()
     }
 
-    private search(pos: number, parsem: Parsem<T>): ResultEntry<T> | undefined {
+    search(pos: number, parsem: Parsem<T>): ResultEntry<T> | undefined {
         return this._memoizer.get(pos)?.get(parsem)
     }
 
-    private memoize(pos: number, parsem: Parsem<T>, memo: ResultEntry<T>) {
+    memoize(pos: number, parsem: Parsem<T>, memo: ResultEntry<T>) {
         let parsems = this._memoizer.get(pos)
         if (parsems === undefined) {
             parsems = new Map<Parsem<T>, ResultEntry<T>>()
