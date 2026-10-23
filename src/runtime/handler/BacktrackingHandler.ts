@@ -39,8 +39,10 @@ export default class BacktrackingHandler<T> {
             const backup = {
                 pos: this._ctx.sourceManager.pos,
                 symbolPos: this._ctx.symbolManager.pos,
+                builder: this._ctx.symbolManager.current,
                 builderPos: this._ctx.symbolManager.builderPos,
                 tokensPos: this._ctx.tokenManager.pos,
+                productionPos: this._ctx.productionManager.pos,
                 productionEffectsLength: this._ctx.productionEffectJournal.length,
                 symbolEffectsLength: this._ctx.symbolEffectJournal.length
             }
@@ -48,7 +50,16 @@ export default class BacktrackingHandler<T> {
             // run encapsulated lambda
             const res = lambda(this._ctx)
 
-            if (res === Result.Continue && this._ctx.sourceManager.pos != backup.pos)
+            if (res === Result.Continue && (
+                this._ctx.sourceManager.pos !== backup.pos ||
+                this._ctx.symbolManager.pos !== backup.symbolPos ||
+                this._ctx.symbolManager.current !== backup.builder ||
+                this._ctx.symbolManager.builderPos !== backup.builderPos ||
+                this._ctx.tokenManager.pos !== backup.tokensPos ||
+                this._ctx.productionManager.pos !== backup.productionPos ||
+                this._ctx.productionEffectJournal.length !== backup.productionEffectsLength ||
+                this._ctx.symbolEffectJournal.length !== backup.symbolEffectsLength
+            ))
                 throw new Error(`Error at ${this._ctx.sourceManager.pos} "continue" status cannot modify execution stack!`)
 
             if (res === Result.NotParsed) {
