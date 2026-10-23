@@ -26,11 +26,11 @@ describe('basic Context', () => {
 
 })
 
-describe('exception Context', () => {
+describe('Context parsing status', () => {
 
     // n = [0-9]+
     const n = repeat(charIn('0123456789')).productT(v => Number(v))
-    // A = n (',' n)*
+    // A = n ',' n
     const A = sequence(n, sequence(charIn(','), n))
 
     test('should parse "1,2"', () => {
@@ -38,11 +38,10 @@ describe('exception Context', () => {
         assert.strictEqual(A.parse(ctx), Result.Parsed)
     })
 
-    test('should not parse "1," and throw error', () => {
+    test('should reject "1," even when all source characters were consumed', () => {
         const ctx = new Context<number>("1,")
-        A.parse(ctx)
-        A.build(ctx)
-        assert.throws(() => { return ctx.productionManager.result }, Error)
+        assert.strictEqual(A.parse(ctx), Result.NotParsed)
+        assert.strictEqual(ctx.sourceManager.current, null)
     })
 
 })

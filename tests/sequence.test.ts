@@ -72,7 +72,7 @@ describe('combination sequence/char', () => {
 
 })
 
-describe('sequence backup', () => {
+describe('sequence progress', () => {
 
     const parser = sequence(charIn('a'), charIn('b'))
 
@@ -82,10 +82,11 @@ describe('sequence backup', () => {
         assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
-    test('sequence that does not parse should be positioned at begining', () => {
+    test('a failed sequence preserves the input consumed by its successful prefix', () => {
         const ctx = new Context("ac")
-        parser.parse(ctx)
-        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => token.symbol), ['a'])
     })
 
 })

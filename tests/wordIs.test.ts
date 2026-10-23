@@ -18,11 +18,11 @@ describe('basic wordIs', () => {
         assert.strictEqual(ctx.sourceManager.pos, 8)
     })
 
-    test('wordIs should not parse "hi wurld"', () => {
+    test('a failed word restores its own position without rolling back the preceding sequence', () => {
         const ctx = new Context("hi wurld")
         assert.strictEqual(parser.parse(ctx), Result.NotParsed)
-        assert.strictEqual(ctx.sourceManager.pos, 0)
-        assert.deepStrictEqual(ctx.tokenManager.tokens, [])
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => token.symbol), ['h', 'i', ' '])
         assert.deepStrictEqual(ctx.productionManager.stack, [])
     })
     

@@ -45,10 +45,11 @@ describe('choice backup', () => {
         assert.strictEqual(ctx.sourceManager.pos, 2)
     })
 
-    test('choice that does not parse should be positioned at begining', () => {
+    test('a failed choice preserves the input consumed before it in a sequence', () => {
         const ctx = new Context("ac")
-        parser.parse(ctx)
-        assert.strictEqual(ctx.sourceManager.pos, 0)
+        assert.strictEqual(parser.parse(ctx), Result.NotParsed)
+        assert.strictEqual(ctx.sourceManager.pos, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => token.symbol), ['a'])
     })
 
     test('choice that parse should be positioned at end', () => {

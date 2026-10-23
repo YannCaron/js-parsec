@@ -157,7 +157,9 @@ for (const [name, grammar] of grammars) {
                 const ctx = new Context<unknown>(source)
                 const label = `${name}, shared=${shared}, source=${JSON.stringify(source)}`
 
-                assert.strictEqual(parser.parse(ctx), expected.status, label)
+                // The oracle rolls back failures; raw sequences and initial repeat attempts do not.
+                const result = ctx.backtrackingHandler.handle(current => parser.parse(current))
+                assert.strictEqual(result, expected.status, label)
                 assert.strictEqual(ctx.sourceManager.pos, expected.position, label)
                 assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), expected.tokens, label)
                 assert.strictEqual(ctx.symbolManager.pos, 0, label)
