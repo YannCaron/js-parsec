@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
+import { Context, ParsemDecorator, Result, Token, TokenType, Utils, choice, expression, sequence, wordIs } from '../../index.ts'
 import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 import { ReadSymbolInstruction, type SymbolInstruction } from '../../src/runtime/manager/SymbolEffectJournal.ts'
 
@@ -162,6 +162,46 @@ describe('Packrat memo table invariants', () => {
 })
 
 describe('Packrat handler integration invariants', () => {
+
+    for (const positions of [[0, 1, 2, 3], [1, 2, 3]]) {
+        test(`automatic purge retains reachable positions with initial entries ${positions}`, () => {
+            const ctx = new Context<string>('abcd')
+            const stored = wordIs<string>('a')
+            const trigger = wordIs<string>('b')
+            for (const position of positions)
+                ctx.memoizerHandler.memoize(position, stored, memoEntry(Result.Continue, position))
+
+            ctx.sourceManager.pos = 2
+            assert.strictEqual(ctx.memoizerHandler.handle(trigger,
+                current => current.backtrackingHandler.handle(() => Result.Continue)), Result.Continue)
+
+            for (const position of positions)
+                assert.strictEqual(ctx.memoizerHandler.search(position, stored) !== undefined, position >= 2)
+            assert.ok(ctx.memoizerHandler.search(2, trigger))
+        })
+    }
+
+    test('alternative rollback retains a shared rule at a nonzero offset', () => {
+        class Counted extends ParsemDecorator<string> {
+            calls = 0
+            parse(ctx: Context<string>): Result {
+                this.calls++
+                return this.decorated.parse(ctx)
+            }
+            toString(): string { return this.decorated.toString() }
+        }
+        const shared = new Counted(wordIs<string>('b'))
+        const parser = sequence(wordIs<string>('a'), choice(
+            sequence(choice(shared), wordIs<string>('x')),
+            sequence(choice(shared), wordIs<string>('c'))
+        ))
+        const ctx = new Context<string>('abc')
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(ctx.sourceManager.pos, 3)
+        assert.strictEqual(shared.calls, 1)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => token.symbol), ['a', 'b', 'c'])
+    })
 
     for (const expected of [Result.Parsed, Result.NotParsed, Result.Continue]) {
         test(`MemoizerHandler.handle caches ${expected} and restores its final position without evaluating twice`, () => {

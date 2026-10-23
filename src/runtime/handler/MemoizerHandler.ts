@@ -43,7 +43,7 @@ export default class MemoizerHandler<T> {
         if (pos === -1)
             return
 
-        while (this._orderedIndex.peek() ?? Number.MAX_VALUE < pos) {
+        while ((this._orderedIndex.peek() ?? Infinity) < pos) {
             const index = this._orderedIndex.pop()
 
             if (index !== undefined)
