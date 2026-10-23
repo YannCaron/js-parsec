@@ -72,7 +72,6 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 
         while (count > 0) {
             const value = ctx.productionManager.consume()
-            if (value === undefined) break
             args.unshift(value)
             count--
         }

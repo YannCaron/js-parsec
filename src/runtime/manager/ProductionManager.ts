@@ -48,11 +48,11 @@ export default class ProductionManager<T> {
         this._stack.push(production)
     }
 
-    consume(): T | undefined {
+    consume(): T {
         if (this._stack.isEmpty)
             throw new Error(`Production stack overflow!`)
 
-        return this._stack.pop()
+        return this._stack.pop() as T
     }
 
     restore(stack: Array<T>): void {
@@ -73,12 +73,11 @@ export default class ProductionManager<T> {
     produce(startPos: number, producer: (...v: Array<T>) => T, nbArgs?: number): void {
         const args = new Array<T>()
         let count = nbArgs !== undefined ? nbArgs : this.calculateStackDepth(startPos, producer)
-if (!Number.isInteger(count) || count < 0)
+        if (!Number.isInteger(count) || count < 0)
             throw new RangeError('Aggregation arity must be a non-negative integer.')
 
         while (count > 0 && !this._stack.isEmpty) {
             const value = this.consume()
-            if (value === undefined) break
             args.unshift(value)
             count--
         }
