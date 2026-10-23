@@ -5,17 +5,26 @@ export default class BacktrackingHandler<T> {
 
     private readonly _ctx: Context<T>
     private _depth: number
-    private _firstReachingPosition : number | undefined
+    private _earliestBacktrackPosition : number
+
+    get isReachingEarliestPosition():boolean {
+        return this._depth === 0
+    }
+
+    get earliestBacktrackPosition(): number {
+        return this._earliestBacktrackPosition
+    }
 
     constructor(ctx: Context<T>) {
         this._ctx = ctx
         this._depth = 0
+        this._earliestBacktrackPosition = -1
     }
 
     handle(lambda: (ctx: Context<T>) => Result): Result {
         try {
             if (this._depth === 0)
-                this._firstReachingPosition = this._ctx.sourceManager.pos
+                this._earliestBacktrackPosition = this._ctx.sourceManager.pos
 
             this._depth++
 
@@ -23,9 +32,6 @@ export default class BacktrackingHandler<T> {
 
         } finally {
             this._depth--
-
-            if (this._depth == 0)
-                console.log("PURGING - pos: " + this._firstReachingPosition);
         }
     }
 

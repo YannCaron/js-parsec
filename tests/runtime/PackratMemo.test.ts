@@ -210,21 +210,26 @@ describe('Packrat handler integration invariants', () => {
 
         assert.strictEqual(first.constructor, second.constructor)
         assert.strictEqual(first.toString(), second.toString())
-        assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.sourceManager.pos, 1)
-        assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.sourceManager.pos, 2)
-        ctx.sourceManager.pos = 0
-        assert.strictEqual(ctx.memoizerHandler.handle(second, evaluate), Result.Parsed)
-        assert.strictEqual(ctx.sourceManager.pos, 1)
-        assert.strictEqual(calls, 3)
 
-        for (const [parsem, startPos] of [[first, 0], [first, 1], [second, 0]] as const) {
-            ctx.sourceManager.pos = startPos
-            assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), Result.Parsed)
-            assert.strictEqual(ctx.sourceManager.pos, startPos + 1)
-        }
-        assert.strictEqual(calls, 3)
+        // Keep position zero reachable while checking cached entries.
+        ctx.backtrackingHandler.handle(() => {
+            assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
+            assert.strictEqual(ctx.sourceManager.pos, 1)
+            assert.strictEqual(ctx.memoizerHandler.handle(first, evaluate), Result.Parsed)
+            assert.strictEqual(ctx.sourceManager.pos, 2)
+            ctx.sourceManager.pos = 0
+            assert.strictEqual(ctx.memoizerHandler.handle(second, evaluate), Result.Parsed)
+            assert.strictEqual(ctx.sourceManager.pos, 1)
+            assert.strictEqual(calls, 3)
+
+            for (const [parsem, startPos] of [[first, 0], [first, 1], [second, 0]] as const) {
+                ctx.sourceManager.pos = startPos
+                assert.strictEqual(ctx.memoizerHandler.handle(parsem, evaluate), Result.Parsed)
+                assert.strictEqual(ctx.sourceManager.pos, startPos + 1)
+            }
+            assert.strictEqual(calls, 3)
+            return Result.Parsed
+        })
     })
 
     test('the same parser is evaluated separately in every context', () => {

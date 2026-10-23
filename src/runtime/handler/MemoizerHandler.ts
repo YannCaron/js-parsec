@@ -3,6 +3,7 @@ import Context from "../Context.ts";
 import { Instruction } from "../manager/ProductionEffectJournal.ts";
 import { Result } from "../Result.ts";
 import type { SymbolInstruction } from "../manager/SymbolEffectJournal.ts";
+import { PriorityQueue } from "@cyann/js-commons";
 
 type ResultEntry<T> = {
     newPos: number,
@@ -15,10 +16,12 @@ export default class MemoizerHandler<T> {
 
     private readonly _ctx: Context<T>
     private readonly _memoizer: Map<number, Map<Parsem<T>, ResultEntry<T>>>
+    private readonly _orderedIndex: PriorityQueue<number>
 
     constructor(ctx: Context<T>) {
         this._ctx = ctx
         this._memoizer = new Map<number, Map<Parsem<T>, ResultEntry<T>>>()
+        this._orderedIndex = new PriorityQueue<number>()
     }
 
     private search(pos: number, parsem: Parsem<T>): ResultEntry<T> | undefined {
@@ -30,9 +33,22 @@ export default class MemoizerHandler<T> {
         if (parsems === undefined) {
             parsems = new Map<Parsem<T>, ResultEntry<T>>()
             this._memoizer.set(pos, parsems)
+            this._orderedIndex.push(pos)
         }
 
         parsems.set(parsem, memo)
+    }
+
+    private purgeMemoizer(pos: number) {
+        if (pos === -1)
+            return
+
+        while (this._orderedIndex.peek() ?? Number.MAX_VALUE < pos) {
+            const index = this._orderedIndex.pop()
+
+            if (index !== undefined)
+                this._memoizer.delete(index)
+        }
     }
 
     handle(parsem: Parsem<T>, lambda: (ctx: Context<T>) => Result): Result {
@@ -65,6 +81,9 @@ export default class MemoizerHandler<T> {
             return res;
         } finally {
             this._ctx.symbolEffectJournal.stopRecording()
+
+            if (this._ctx.backtrackingHandler.isReachingEarliestPosition)
+                this.purgeMemoizer(this._ctx.backtrackingHandler.earliestBacktrackPosition)
         }
     }
 
