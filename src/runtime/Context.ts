@@ -1,6 +1,7 @@
 import SourceManager from './manager/SourceManager.ts'
 import TokenManager from './manager/TokenManager.ts'
 import SymbolManager from './manager/SymbolManager.ts'
+import SymbolEffectJournal from './manager/SymbolEffectJournal.ts'
 import InstructionTapeManager from './manager/InstructionTapeManager.ts'
 import ProductionManager from './manager/ProductionManager.ts'
 import MemoizerHandler from './handler/MemoizerHandler.ts'
@@ -11,6 +12,7 @@ export default class Context<T> {
     private readonly _sourceManager: SourceManager
     private readonly _tokenManager: TokenManager
     private readonly _symbolManager: SymbolManager
+    private readonly _symbolEffectJournal: SymbolEffectJournal<T>
     private readonly _instructionTapeManager: InstructionTapeManager<T>
     private readonly _productionManager: ProductionManager<T>
     private readonly _backtrackingHandler: BacktrackingHandler<T>
@@ -26,6 +28,10 @@ export default class Context<T> {
 
     get symbolManager(): SymbolManager {
         return this._symbolManager
+    }
+
+    get symbolEffectJournal(): SymbolEffectJournal<T> {
+        return this._symbolEffectJournal
     }
 
     get instructionTapeManager(): InstructionTapeManager<T> {
@@ -48,6 +54,7 @@ export default class Context<T> {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
         this._symbolManager = new SymbolManager()
+        this._symbolEffectJournal = new SymbolEffectJournal<T>(this)
         this._instructionTapeManager = new InstructionTapeManager()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
         this._backtrackingHandler = new BacktrackingHandler<T>(this)
@@ -59,12 +66,15 @@ export default class Context<T> {
 
         if (current === null) return
 
+        const pos = this.sourceManager.pos
+
         if (this.symbolManager.current) {
             this.symbolManager.append(current)
         } else {
             this.tokenManager.create(current, this.sourceManager.pos)
         }
         this.sourceManager.next()
+        this.symbolEffectJournal.recordRead(pos, this.sourceManager.pos)
     }
 
     /* istanbul ignore next */

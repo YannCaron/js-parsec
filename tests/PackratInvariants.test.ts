@@ -404,7 +404,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
     for (const capturedFirst of [false, true]) {
         test(`a shared recognition respects the active terminal builder when capture is ${capturedFirst ? 'abandoned' : 'selected'}`, () => {
-            const rule = choice(expression(wordIs<string>('a')))
+            const body = new CountedParsem(wordIs<string>('a'))
+            const rule = choice(expression(body))
             const captured = productT(rule, value => value).type(TokenType.STRING)
             const parser = choice(
                 sequence(capturedFirst ? captured : rule, wordIs<string>('b')),
@@ -414,6 +415,11 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
             assert.strictEqual(parser.parse(ctx), Result.Parsed)
             assert.strictEqual(ctx.sourceManager.pos, 2)
+            assert.strictEqual(body.count(ctx, 0), 1, 'Capture changes must reuse the same recognition')
+            assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), [
+                { symbol: 'a', pos: 0, type: capturedFirst ? TokenType.DEFAULT : TokenType.STRING },
+                { symbol: 'c', pos: 1, type: TokenType.DEFAULT }
+            ])
             assertTape(ctx, capturedFirst ? [] : [{ kind: 'value', symbol: 'a' }])
             parser.build(ctx)
             assert.deepStrictEqual(ctx.productionManager.stack, capturedFirst ? [] : ['a'])
@@ -421,7 +427,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
     }
 
     test('an enclosing capture receives only the selected characters after rollback', () => {
-        const rule = choice(expression(wordIs<string>('a')))
+        const body = new CountedParsem(wordIs<string>('a'))
+        const rule = choice(expression(body))
         const parser = productT(choice(
             sequence(rule, wordIs<string>('b')),
             sequence(rule, wordIs<string>('c'))
@@ -429,9 +436,103 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const ctx = new Context<string>('ac')
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(body.count(ctx, 0), 1, 'Recognition inside a capture must survive rollback')
         assertTape(ctx, [{ kind: 'value', symbol: 'ac' }])
         parser.build(ctx)
         assert.strictEqual(ctx.productionManager.result, 'ac')
+    })
+
+    for (const text of ['a', '\u{1F600}']) {
+        test(`a parent memo retains a cached child's reads exactly once for ${JSON.stringify(text)}`, () => {
+            const childBody = new CountedParsem(wordIs<string>(text))
+            const child = choice(childBody)
+            const parentBody = new CountedParsem(sequence(child, wordIs<string>('b')))
+            const parent = choice(parentBody)
+            let calls = 0
+            const captured = productT(parent, value => { calls++; return value }).type(TokenType.STRING)
+            const parser = choice(
+                sequence(child, wordIs<string>('x')),
+                sequence(parent, wordIs<string>('x')),
+                sequence(captured, wordIs<string>('c'))
+            )
+            const ctx = new Context<string>(text + 'bc')
+
+            assert.strictEqual(parser.parse(ctx), Result.Parsed)
+            assert.strictEqual(childBody.count(ctx, 0), 1)
+            assert.strictEqual(parentBody.count(ctx, 0), 1)
+            assert.strictEqual(calls, 0)
+            assert.strictEqual(ctx.symbolEffectJournal.length, 0)
+            assert.strictEqual(ctx.symbolManager.pos, 0)
+            assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), [
+                { symbol: text + 'b', pos: 0, type: TokenType.STRING },
+                { symbol: 'c', pos: text.length + 1, type: TokenType.DEFAULT }
+            ])
+            assertTape(ctx, [{ kind: 'value', symbol: text + 'b' }])
+
+            parser.build(ctx)
+
+            assert.strictEqual(calls, 1)
+            assert.strictEqual(ctx.productionManager.result, text + 'b')
+        })
+    }
+
+    test('a cached fragment rebuilds nested captures without duplicating tokens or productions', () => {
+        const calls: string[] = []
+        const innerBody = new CountedParsem(wordIs<string>('b'))
+        const inner = productT(innerBody, value => { calls.push('inner'); return value.toUpperCase() }).type(TokenType.STRING)
+        const body = new CountedParsem(sequence(wordIs<string>('a'), inner, wordIs<string>('c')))
+        const shared = choice(body)
+        const outer = productT(shared, value => { calls.push('outer'); return value.toUpperCase() }).type(TokenType.STRING)
+        const parser = choice(sequence(shared, wordIs<string>('x')), outer)
+        const ctx = new Context<string>('abc')
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(body.count(ctx, 0), 1)
+        assert.strictEqual(innerBody.count(ctx, 1), 1)
+        assert.deepStrictEqual(calls, [])
+        assert.strictEqual(ctx.symbolManager.pos, 0)
+        assert.strictEqual(ctx.symbolEffectJournal.length, 0)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), [
+            { symbol: 'b', pos: 1, type: TokenType.STRING },
+            { symbol: 'ac', pos: 0, type: TokenType.STRING }
+        ])
+        assertTape(ctx, [{ kind: 'value', symbol: 'b' }, { kind: 'value', symbol: 'ac' }])
+
+        parser.build(ctx)
+
+        assert.deepStrictEqual(calls, ['inner', 'outer'])
+        assert.deepStrictEqual(ctx.productionManager.result, ['B', 'AC'])
+    })
+
+    test('a parent memo excludes the capture effects of an abandoned alternative', () => {
+        let abandonedCalls = 0
+        const abandoned = productT(wordIs<string>('a'), value => { abandonedCalls++; return value }).type(TokenType.STRING)
+        const body = new CountedParsem(choice(
+            sequence(abandoned, wordIs<string>('x')),
+            wordIs<string>('ab')
+        ))
+        const shared = choice(body)
+        let selectedCalls = 0
+        const selected = productT(shared, value => { selectedCalls++; return value }).type(TokenType.STRING)
+        const parser = choice(sequence(shared, wordIs<string>('x')), selected)
+        const ctx = new Context<string>('ab')
+
+        assert.strictEqual(parser.parse(ctx), Result.Parsed)
+        assert.strictEqual(body.count(ctx, 0), 1)
+        assert.strictEqual(abandonedCalls, 0)
+        assert.strictEqual(selectedCalls, 0)
+        assert.strictEqual(ctx.symbolManager.pos, 0)
+        assert.strictEqual(ctx.symbolEffectJournal.length, 0)
+        assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), [
+            { symbol: 'ab', pos: 0, type: TokenType.STRING }
+        ])
+        assertTape(ctx, [{ kind: 'value', symbol: 'ab' }])
+
+        parser.build(ctx)
+
+        assert.strictEqual(abandonedCalls, 0)
+        assert.strictEqual(selectedCalls, 1)
+        assert.strictEqual(ctx.productionManager.result, 'ab')
     })
 
     for (const [name, value] of [

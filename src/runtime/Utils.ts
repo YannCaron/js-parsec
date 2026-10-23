@@ -2,7 +2,6 @@ import Context from "./Context.ts"
 import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
-import Token from "./Token.ts"
 import { PushAggregatorInstruction, PushValueInstruction } from "./manager/InstructionTapeManager.ts"
 
 export default class Utils {
@@ -17,22 +16,17 @@ export default class Utils {
 
     static handleTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (v: string) => T, type?: TokenType): Result {
         const pos = ctx.sourceManager.pos
-        ctx.symbolManager.create()
+        ctx.symbolEffectJournal.beginCapture()
 
         // run encapsulated lambda
         const res = lambda(ctx)
 
-        const builder = ctx.symbolManager.consume()
+        const symbol = ctx.symbolEffectJournal.endCapture(pos, res, type)
 
         if (res !== Result.Parsed)
             return res
 
-        if (!builder) return res
-
-        const symbol = builder.toString()
-        const token = new Token(symbol, pos, type);
-
-        ctx.tokenManager.append(token)
+        if (symbol === undefined) return res
 
         ctx.instructionTapeManager.append(new PushValueInstruction<T>(symbol, producer))
 

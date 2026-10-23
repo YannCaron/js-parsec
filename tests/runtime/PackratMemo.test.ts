@@ -2,11 +2,12 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
 import { PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+import { ReadSymbolInstruction, type SymbolInstruction } from '../../src/runtime/manager/SymbolEffectJournal.ts'
 
 type MemoEntry = NonNullable<ReturnType<Context<string>['memoizerHandler']['search']>>
 
-function memoEntry(res: Result, newPos: number, tokensDelta: Token[] = []): MemoEntry {
-    return { res, newPos, tokensDelta, instructionsDelta: [] }
+function memoEntry(res: Result, newPos: number, symbolEffects: SymbolInstruction<string>[] = []): MemoEntry {
+    return { res, newPos, symbolEffects, instructionsDelta: [] }
 }
 
 describe('Packrat memo table invariants', () => {
@@ -184,7 +185,9 @@ describe('Packrat handler integration invariants', () => {
             const tokens = expected === Result.Parsed ? [new Token('a', 0, TokenType.DEFAULT)] : []
             const memo = ctx.memoizerHandler.search(0, parsem)
             assert.ok(memo)
-            assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(expected, finalPos, tokens))
+            const symbolEffects = expected === Result.Parsed ? [new ReadSymbolInstruction<string>(0, 1)] : []
+            assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(expected, finalPos, symbolEffects))
+            assert.strictEqual(ctx.symbolEffectJournal.length, 0)
 
             ctx.sourceManager.pos = 0
             ctx.tokenManager.pos = 0
@@ -261,6 +264,7 @@ describe('Packrat handler integration invariants', () => {
         }), error => error === failure)
         assert.strictEqual(calls, 1)
         assert.strictEqual(ctx.memoizerHandler.search(0, parsem), undefined)
+        assert.strictEqual(ctx.symbolEffectJournal.length, 0)
 
         ctx.sourceManager.pos = 0
         ctx.tokenManager.pos = 0
@@ -272,7 +276,8 @@ describe('Packrat handler integration invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 1)
         const memo = ctx.memoizerHandler.search(0, parsem)
         assert.ok(memo)
-        assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(Result.Parsed, 1, [new Token('a', 0, TokenType.DEFAULT)]))
+        assert.deepStrictEqual({ ...memo, instructionsDelta: Array.from(memo.instructionsDelta) }, memoEntry(Result.Parsed, 1, [new ReadSymbolInstruction<string>(0, 1)]))
+        assert.strictEqual(ctx.symbolEffectJournal.length, 0)
     })
 
     test('a memo entry ending before its starting position is rejected without rewinding', () => {
@@ -281,7 +286,7 @@ describe('Packrat handler integration invariants', () => {
         ctx.next()
         ctx.productionManager.append('prefix')
         ctx.memoizerHandler.memoize(1, parsem, {
-            ...memoEntry(Result.Parsed, 0, [new Token('invalid', 1)]),
+            ...memoEntry(Result.Parsed, 0, [new ReadSymbolInstruction<string>(1, 2)]),
             instructionsDelta: [new PushValueInstruction('invalid')]
         })
         const tokens = ctx.tokenManager.tokens

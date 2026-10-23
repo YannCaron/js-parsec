@@ -2,12 +2,12 @@ import { Parsem } from "../../Parsem.ts";
 import Context from "../Context.ts";
 import { Instruction } from "../manager/InstructionTapeManager.ts";
 import { Result } from "../Result.ts";
-import type Token from "../Token.ts";
+import type { SymbolInstruction } from "../manager/SymbolEffectJournal.ts";
 
 type ResultEntry<T> = {
     newPos: number,
     res: Result,
-    tokensDelta: Token[]
+    symbolEffects: SymbolInstruction<T>[],
     instructionsDelta: Instruction<T>[],
 }
 
@@ -37,36 +37,35 @@ export default class MemoizerHandler<T> {
 
     handle(parsem: Parsem<T>, lambda: (ctx: Context<T>) => Result): Result {
 
-        // avoid memoization in case of symbol building
-        if (this._ctx.symbolManager.pos > 0)
-            return lambda(this._ctx)
-
         const pos = this._ctx.sourceManager.pos
         const memo = this.search(pos, parsem)
 
         if (memo !== undefined) {
-            const { newPos, res, tokensDelta, instructionsDelta: instructionsDelta } = memo
+            const { newPos, res, symbolEffects, instructionsDelta } = memo
 
             if (newPos < pos)
                 throw new Error(`Corrupted memo: final position ${newPos} precedes starting position ${pos}.`)
 
-            this._ctx.sourceManager.pos = newPos
-            this._ctx.tokenManager.append(...tokensDelta)
+            this._ctx.symbolEffectJournal.replay(symbolEffects)
             this._ctx.instructionTapeManager.append(...instructionsDelta)
+            this._ctx.sourceManager.pos = newPos
             return res
         }
 
         const tapePos = this._ctx.instructionTapeManager.length
-        const tokenPos = this._ctx.tokenManager.pos
+        const symbolEffectsPos = this._ctx.symbolEffectJournal.startRecording()
 
-        const res = lambda(this._ctx)
+        try {
+            const res = lambda(this._ctx)
 
-        const instructionsDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
-        const tokensDelta = this._ctx.tokenManager.subTokensFrom(tokenPos)
-        this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, tokensDelta, instructionsDelta })
+            const instructionsDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
+            const symbolEffects = this._ctx.symbolEffectJournal.subJournalFrom(symbolEffectsPos)
+            this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, symbolEffects, instructionsDelta })
 
-        return res;
-
+            return res;
+        } finally {
+            this._ctx.symbolEffectJournal.stopRecording()
+        }
     }
 
 }
