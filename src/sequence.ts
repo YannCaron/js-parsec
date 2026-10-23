@@ -6,7 +6,7 @@ class Sequence<T> extends ParsemComposite<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return ctx.backtrackingHandler.handle(ctx => this.doparse(ctx))
+        return this.doparse(ctx)
 
     }
 
@@ -47,6 +47,6 @@ declare module "./Parsem" {
     }
 }
 
-Parsem.prototype.then = function<T> (...children: Array<Parsem<T>>) {
+Parsem.prototype.then = function <T>(...children: Array<Parsem<T>>) {
     return sequence(...ParsemComposite.flattenChain<T>(this, children, Sequence))
 }

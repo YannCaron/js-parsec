@@ -6,30 +6,28 @@ class Repeat<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return ctx.memoizerHandler.handle(this,
-            ctx => ctx.backtrackingHandler.handle(ctx => {
-                let res = Result.NotParsed
-                let hasNext = ctx.sourceManager.current != null
-                let parsedRes = this.decorated.parse(ctx)
+        let res = Result.NotParsed
+        let hasNext = ctx.sourceManager.current != null
+        let parsedRes = this.decorated.parse(ctx)
 
-                while (parsedRes === Result.Parsed && hasNext) {
-                    const startPos = ctx.sourceManager.pos
-                    res = Result.Parsed
-                    parsedRes = this.decorated.parse(ctx)
+        while (parsedRes === Result.Parsed && hasNext) {
+            const startPos = ctx.sourceManager.pos
+            res = Result.Parsed
 
-                    hasNext = ctx.sourceManager.current != null
+            parsedRes = ctx.backtrackingHandler.handle(
+                ctx => this.decorated.parse(ctx)
+            )
 
-                    if (parsedRes === Result.Parsed && ctx.sourceManager.pos === startPos)
-                        throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
-                }
+            hasNext = ctx.sourceManager.current != null
 
-                if (res === Result.NotParsed && parsedRes === Result.Continue)
-                    res = Result.Continue
+            if (parsedRes === Result.Parsed && ctx.sourceManager.pos === startPos)
+                throw Error(`Infinite loop detected in grammar: ${this.toString()}!`)
+        }
 
-                return res
-            })
-        )
+        if (res === Result.NotParsed && parsedRes === Result.Continue)
+            res = Result.Continue
 
+        return res
 
     }
 

@@ -6,15 +6,12 @@ class Optional<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return ctx.memoizerHandler.handle(this,
-            ctx => {
-                const res = this.decorated.parse(ctx)
+        return ctx.memoizerHandler.handle(this, ctx => {
+            const res = ctx.backtrackingHandler.handle(
+                ctx => this.decorated.parse(ctx))
 
-                if (res === Result.NotParsed)
-                    return Result.Continue
-
-                return res
-            })
+            return res === Result.NotParsed ? Result.Continue : res
+        })
 
     }
 
