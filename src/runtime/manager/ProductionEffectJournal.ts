@@ -60,6 +60,8 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 
     constructor(arity: number, producer: (...v: Array<T>) => T) {
         super()
+        if (!Number.isInteger(arity) || arity < 0)
+            throw new RangeError('Aggregation arity must be a non-negative integer.')
         this._arity = arity
         this._producer = producer
     }
