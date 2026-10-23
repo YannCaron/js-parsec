@@ -6,7 +6,6 @@ compile la bibliothèque ; les tests ne font pas partie de cette compilation.
 ~~~powershell
 npm.cmd test
 npm.cmd test -- tests/DifferentialInvariants.test.ts
-# Après réactivation des fichiers .ts.no :
 npm.cmd test -- tests/runtime/ProductionEffectJournalInvariants.test.ts
 npm.cmd test -- tests/runtime/RecognitionStateInvariants.test.ts
 ~~~
@@ -27,11 +26,11 @@ devient disponible. Les tests n’injectent ni cache simulé ni adaptateur du mo
 | --- | --- |
 | `PEGInvariants.test.ts` | Choix ordonné, rollback, captures, optionnels, progression des répétitions et productions |
 | `PackratInvariants.test.ts` | Reconnaissance mémoïsée, rejeu de la bande, captures et sémantique sélectionnée |
-| `runtime/PackratMemo.test.ts` | Table par contexte, identité et offset ; statuts, exceptions et positions corrompues |
+| `runtime/PackratMemo.test.ts` | Table par contexte, identité et offset ; statuts, exceptions, positions corrompues et purge automatique |
 | `runtime/MemoizerHandler.test.ts` | Tokens et instructions rejoués après backtracking |
 | `runtime/Managers.test.ts` | Managers, journaux d'effets, handlers, isolation et résultat complet |
-| `runtime/ProductionEffectJournalInvariants.test.ts.no` | Valeurs particulières, arités et modèle de pile indépendant ; fichier désactivé |
-| `runtime/RecognitionStateInvariants.test.ts.no` | Neutralité de Continue, rollback et fermeture des captures après exception ; fichier désactivé |
+| `runtime/ProductionEffectJournalInvariants.test.ts` | Valeurs particulières, arités et modèle de pile indépendant |
+| `runtime/RecognitionStateInvariants.test.ts` | Neutralité de Continue, rollback et fermeture des captures après exception |
 | `DifferentialInvariants.test.ts` | Petites grammaires comparées à un interpréteur indépendant |
 
 Les accès passent par `Context.sourceManager`, `tokenManager`, `symbolManager`, `symbolEffectJournal`,
