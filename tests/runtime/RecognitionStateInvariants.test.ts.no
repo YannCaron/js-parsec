@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Parsem, Result, Token, productT } from '../../index.ts'
-import { PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 
 class Recognizer extends Parsem<unknown> {
     private readonly _recognize: (ctx: Context<unknown>) => Result
@@ -19,7 +19,7 @@ function snapshot(ctx: Context<unknown>) {
     return {
         position: ctx.sourceManager.pos,
         tokens: ctx.tokenManager.tokens,
-        instructions: Array.from(ctx.instructionTapeManager.queue),
+        instructions: Array.from(ctx.productionEffectJournal.queue),
         values: ctx.productionManager.stack,
         captures: ctx.symbolManager._builders.map(builder => builder.toString()),
     }
@@ -41,7 +41,7 @@ describe('Recognition state invariants', () => {
     const mutations: Array<[string, (ctx: Context<unknown>) => void]> = [
         ['source position', ctx => ctx.next()],
         ['tokens', ctx => ctx.tokenManager.append(new Token('ghost', 0))],
-        ['instruction tape', ctx => ctx.instructionTapeManager.append(new PushValueInstruction('ghost'))],
+        ['production effect journal', ctx => ctx.productionEffectJournal.append(new PushValueInstruction('ghost'))],
         ['new capture', ctx => ctx.symbolManager.create()],
         ['removed capture', ctx => { ctx.symbolManager.consume() }],
         ['capture contents', ctx => ctx.symbolManager.append('ghost')],
@@ -72,7 +72,7 @@ describe('Recognition state invariants', () => {
         assert.strictEqual(ctx.backtrackingHandler.handle(current => {
             current.next()
             current.tokenManager.append(new Token('discarded', 0))
-            current.instructionTapeManager.append(new PushValueInstruction('discarded'))
+            current.productionEffectJournal.append(new PushValueInstruction('discarded'))
             current.symbolManager.create()
             current.symbolManager.append('discarded')
             return Result.NotParsed
@@ -97,7 +97,7 @@ describe('Recognition state invariants', () => {
             assert.strictEqual(calls, 0)
             assert.deepStrictEqual(snapshot(ctx).captures, before.captures)
             assert.deepStrictEqual(ctx.tokenManager.tokens, before.tokens)
-            assert.deepStrictEqual(Array.from(ctx.instructionTapeManager.queue), before.instructions)
+            assert.deepStrictEqual(Array.from(ctx.productionEffectJournal.queue), before.instructions)
             assert.deepStrictEqual(ctx.productionManager.stack, before.values)
         })
     }

@@ -2,7 +2,7 @@ import Context from "./Context.ts"
 import { Result } from "./Result.ts"
 import { TokenType } from "./TokenType.ts"
 import { Parsem } from "../Parsem.ts"
-import { PushAggregatorInstruction, PushValueInstruction } from "./manager/InstructionTapeManager.ts"
+import { PushAggregatorInstruction, PushValueInstruction } from "./manager/ProductionEffectJournal.ts"
 
 export default class Utils {
 
@@ -28,14 +28,14 @@ export default class Utils {
 
         if (symbol === undefined) return res
 
-        ctx.instructionTapeManager.append(new PushValueInstruction<T>(symbol, producer))
+        ctx.productionEffectJournal.append(new PushValueInstruction<T>(symbol, producer))
 
         return Result.Parsed
     }
 
     static handleNTProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
 
-        const tapeLength = ctx.instructionTapeManager.length
+        const productionEffectsLength = ctx.productionEffectJournal.length
 
         // run encapsulated lambda
         const res = lambda(ctx)
@@ -43,8 +43,8 @@ export default class Utils {
         if (res !== Result.Parsed || !producer)
             return res
 
-        const arity = nbArgs !== undefined ? nbArgs : ctx.instructionTapeManager.calculateStackDepth(tapeLength, producer)
-        ctx.instructionTapeManager.append(new PushAggregatorInstruction<T>(arity, producer))
+        const arity = nbArgs !== undefined ? nbArgs : ctx.productionEffectJournal.calculateStackDepth(productionEffectsLength, producer)
+        ctx.productionEffectJournal.append(new PushAggregatorInstruction<T>(arity, producer))
 
         return Result.Parsed
     }

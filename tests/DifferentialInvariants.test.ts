@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Context, Parsem, Result, TokenType, choice, optional, productNT, productT, repeat, sequence, wordIs } from '../index.ts'
-import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/InstructionTapeManager.ts'
+import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/ProductionEffectJournal.ts'
 
 type Grammar =
     | { kind: 'literal'; text: string; produce: boolean }
@@ -166,13 +166,13 @@ for (const [name, grammar] of grammars) {
                 assert.deepStrictEqual(ctx.productionManager.stack, [], label)
                 assert.deepStrictEqual(calls, [], label)
 
-                const actualTape = Array.from(ctx.instructionTapeManager.queue, instruction => {
+                const actualProductionEffects = Array.from(ctx.productionEffectJournal.queue, instruction => {
                     if (instruction instanceof PushValueInstruction) return { kind: 'push', symbol: instruction.symbol }
                     assert.ok(instruction instanceof PushAggregatorInstruction)
                     return { kind: 'reduce', arity: instruction.arity }
                 })
-                const expectedTape = expected.operations.map(operation => operation.kind === 'push' ? operation : { kind: 'reduce', arity: operation.arity })
-                assert.deepStrictEqual(actualTape, expectedTape, label)
+                const expectedProductionEffects = expected.operations.map(operation => operation.kind === 'push' ? operation : { kind: 'reduce', arity: operation.arity })
+                assert.deepStrictEqual(actualProductionEffects, expectedProductionEffects, label)
 
                 if (expected.status === Result.Parsed) parser.build(ctx)
                 const values = referenceValues(expected.operations)

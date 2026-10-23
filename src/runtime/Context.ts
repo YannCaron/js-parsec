@@ -2,7 +2,7 @@ import SourceManager from './manager/SourceManager.ts'
 import TokenManager from './manager/TokenManager.ts'
 import SymbolManager from './manager/SymbolManager.ts'
 import SymbolEffectJournal from './manager/SymbolEffectJournal.ts'
-import InstructionTapeManager from './manager/InstructionTapeManager.ts'
+import ProductionEffectJournal from './manager/ProductionEffectJournal.ts'
 import ProductionManager from './manager/ProductionManager.ts'
 import MemoizerHandler from './handler/MemoizerHandler.ts'
 import BacktrackingHandler from './handler/BacktrackingHandler.ts'
@@ -13,7 +13,7 @@ export default class Context<T> {
     private readonly _tokenManager: TokenManager
     private readonly _symbolManager: SymbolManager
     private readonly _symbolEffectJournal: SymbolEffectJournal<T>
-    private readonly _instructionTapeManager: InstructionTapeManager<T>
+    private readonly _productionEffectJournal: ProductionEffectJournal<T>
     private readonly _productionManager: ProductionManager<T>
     private readonly _backtrackingHandler: BacktrackingHandler<T>
     private readonly _memoizerHandler: MemoizerHandler<T>
@@ -34,8 +34,8 @@ export default class Context<T> {
         return this._symbolEffectJournal
     }
 
-    get instructionTapeManager(): InstructionTapeManager<T> {
-        return this._instructionTapeManager
+    get productionEffectJournal(): ProductionEffectJournal<T> {
+        return this._productionEffectJournal
     }
 
     get productionManager(): ProductionManager<T> {
@@ -55,7 +55,7 @@ export default class Context<T> {
         this._tokenManager = new TokenManager()
         this._symbolManager = new SymbolManager()
         this._symbolEffectJournal = new SymbolEffectJournal<T>(this)
-        this._instructionTapeManager = new InstructionTapeManager()
+        this._productionEffectJournal = new ProductionEffectJournal()
         this._productionManager = new ProductionManager<T>(this._sourceManager)
         this._backtrackingHandler = new BacktrackingHandler<T>(this)
         this._memoizerHandler = new MemoizerHandler<T>(this)
@@ -82,7 +82,7 @@ export default class Context<T> {
         return `Context {
     - pos: ${this.sourceManager.pos}
     - src: ${this.sourceManager.enhancedSource}
-    - tape: ${this.instructionTapeManager.queue}
+    - production effects: ${this.productionEffectJournal.queue}
     - tokens: ${this.tokenManager.tokens.map(e => '\n        ' + JSON.stringify(e))}
 }`
     }

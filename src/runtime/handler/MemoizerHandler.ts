@@ -1,6 +1,6 @@
 import { Parsem } from "../../Parsem.ts";
 import Context from "../Context.ts";
-import { Instruction } from "../manager/InstructionTapeManager.ts";
+import { Instruction } from "../manager/ProductionEffectJournal.ts";
 import { Result } from "../Result.ts";
 import type { SymbolInstruction } from "../manager/SymbolEffectJournal.ts";
 
@@ -47,18 +47,18 @@ export default class MemoizerHandler<T> {
                 throw new Error(`Corrupted memo: final position ${newPos} precedes starting position ${pos}.`)
 
             this._ctx.symbolEffectJournal.replay(symbolEffects)
-            this._ctx.instructionTapeManager.append(...instructionsDelta)
+            this._ctx.productionEffectJournal.append(...instructionsDelta)
             this._ctx.sourceManager.pos = newPos
             return res
         }
 
-        const tapePos = this._ctx.instructionTapeManager.length
+        const productionEffectsPos = this._ctx.productionEffectJournal.length
         const symbolEffectsPos = this._ctx.symbolEffectJournal.startRecording()
 
         try {
             const res = lambda(this._ctx)
 
-            const instructionsDelta = this._ctx.instructionTapeManager.subTapeFrom(tapePos)
+            const instructionsDelta = this._ctx.productionEffectJournal.subJournalFrom(productionEffectsPos)
             const symbolEffects = this._ctx.symbolEffectJournal.subJournalFrom(symbolEffectsPos)
             this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, symbolEffects, instructionsDelta })
 

@@ -44,14 +44,15 @@ with `npm run dev -- "7+8"`).
 
 ## Runtime context
 
-`Context` exposes runtime state through five managers:
+`Context` exposes runtime state through managers and effect journals:
 
 | Manager | State and operations |
 | --- | --- |
 | `sourceManager` | `pos`, `current`, `enhancedSource`, `next()`, `assertComplete()` |
 | `tokenManager` | `tokens`, `pos`, `create()`, `append()`, `consume()` |
 | `symbolManager` | `current`, `pos`, `builderPos`, `create()`, `append()`, `consume()` |
-| `instructionTapeManager` | `queue`, `length`, `append()`, `apply()`, `removeFrom()` |
+| `symbolEffectJournal` | `length`, `startRecording()`, `stopRecording()`, `replay()`, `subJournalFrom()`, `removeFrom()` |
+| `productionEffectJournal` | `queue`, `length`, `append()`, `apply()`, `subJournalFrom()`, `removeFrom()` |
 | `productionManager` | `stack`, `pos`, `result`, `uniqueResult`, `append()`, `consume()`, `restore()`, `produce()` |
 
 Manager implementations live in `src/runtime/manager/`. Backtracking and

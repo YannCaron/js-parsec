@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, productNT, productT, sequence, wordIs } from '../../index.ts'
-import { Instruction, PushAggregatorInstruction, PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+import { Instruction, PushAggregatorInstruction, PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 
-describe('Instruction tape value and arity contracts', () => {
+describe('Production effect journal value and arity contracts', () => {
 
     for (const [name, values] of [
         ['first argument', [undefined, 1]],
@@ -16,14 +16,14 @@ describe('Instruction tape value and arity contracts', () => {
             const ctx = new Context<unknown>('')
             let calls = 0
             ctx.productionManager.append('prefix')
-            ctx.instructionTapeManager.append(...values.map((value, index) => new PushValueInstruction<unknown>(String(index), () => value)))
-            ctx.instructionTapeManager.append(new PushAggregatorInstruction(values.length, (...args) => {
+            ctx.productionEffectJournal.append(...values.map((value, index) => new PushValueInstruction<unknown>(String(index), () => value)))
+            ctx.productionEffectJournal.append(new PushAggregatorInstruction(values.length, (...args) => {
                 calls++
                 assert.deepStrictEqual(args, [...values])
                 return args
             }))
 
-            ctx.instructionTapeManager.apply(ctx)
+            ctx.productionEffectJournal.apply(ctx)
 
             assert.strictEqual(calls, 1)
             assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [...values]])
@@ -113,14 +113,14 @@ function nativeInstruction(operation: Operation): Instruction<number> {
         : new PushAggregatorInstruction(operation.arity, (...values) => values.reduce((sum, value) => sum + value, 0))
 }
 
-describe('Instruction tape model invariants', () => {
+describe('Production effect journal model invariants', () => {
 
     for (const seed of [1, 0x10203, 0xdeadbeef]) {
         test(`append, truncate and replay match an independent stack model, seed ${seed}`, () => {
             let randomState = seed
             const random = () => randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0
             const ctx = new Context<number>('')
-            const tape = ctx.instructionTapeManager
+            const tape = ctx.productionEffectJournal
             const operations: Operation[] = []
             const actions = new Set<string>()
             const rest = (...values: number[]) => values.length
@@ -143,7 +143,7 @@ describe('Instruction tape model invariants', () => {
                         return true
                     })
                     if (valid) {
-                        const instructions = tape.subTapeFrom(start)
+                        const instructions = tape.subJournalFrom(start)
                         const saved = Array.from(instructions)
                         tape.append(...instructions)
                         operations.push(...fragment)
@@ -166,8 +166,8 @@ describe('Instruction tape model invariants', () => {
                 assert.strictEqual(tape.calculateStackDepth(cut, rest), expected.length - referenceStack(operations.slice(0, cut)).length)
 
                 const execution = new Context<number>('')
-                execution.instructionTapeManager.append(...tape.queue)
-                execution.instructionTapeManager.apply(execution)
+                execution.productionEffectJournal.append(...tape.queue)
+                execution.productionEffectJournal.apply(execution)
                 assert.deepStrictEqual(execution.productionManager.stack, expected, `seed=${seed}, turn=${turn}`)
             }
             assert.deepStrictEqual([...actions].sort(), ['append', 'replay', 'truncate'])

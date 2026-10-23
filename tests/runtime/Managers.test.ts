@@ -14,7 +14,7 @@ import {
     sequence,
     wordIs
 } from '../../index.ts'
-import InstructionTapeManager from '../../src/runtime/manager/InstructionTapeManager.ts'
+import ProductionEffectJournal from '../../src/runtime/manager/ProductionEffectJournal.ts'
 import SymbolEffectJournal from '../../src/runtime/manager/SymbolEffectJournal.ts'
 import MemoizerHandler from '../../src/runtime/handler/MemoizerHandler.ts'
 import BacktrackingHandler from '../../src/runtime/handler/BacktrackingHandler.ts'
@@ -29,13 +29,13 @@ describe('Context managers', () => {
         assert.ok(ctx.tokenManager instanceof TokenManager)
         assert.ok(ctx.symbolManager instanceof SymbolManager)
         assert.ok(ctx.symbolEffectJournal instanceof SymbolEffectJournal)
-        assert.ok(ctx.instructionTapeManager instanceof InstructionTapeManager)
+        assert.ok(ctx.productionEffectJournal instanceof ProductionEffectJournal)
         assert.ok(ctx.productionManager instanceof ProductionManager)
         assert.ok(ctx.memoizerHandler instanceof MemoizerHandler)
         assert.ok(ctx.backtrackingHandler instanceof BacktrackingHandler)
-        assert.strictEqual(ctx.instructionTapeManager.length, 0)
+        assert.strictEqual(ctx.productionEffectJournal.length, 0)
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
-        assert.strictEqual(ctx.instructionTapeManager.length, 1)
+        assert.strictEqual(ctx.productionEffectJournal.length, 1)
         assert.strictEqual(ctx.productionManager.pos, 0)
         parser.build(ctx)
         const accessors = Object.entries(Object.getOwnPropertyDescriptors(Context.prototype))
@@ -44,8 +44,8 @@ describe('Context managers', () => {
 
         assert.deepStrictEqual(accessors, [
             'backtrackingHandler',
-            'instructionTapeManager',
             'memoizerHandler',
+            'productionEffectJournal',
             'productionManager',
             'sourceManager',
             'symbolEffectJournal',
@@ -108,11 +108,11 @@ describe('Context managers', () => {
         })
         const outer = new Context<string>('ab')
 
-        assert.notStrictEqual(outer.instructionTapeManager, inner.instructionTapeManager)
+        assert.notStrictEqual(outer.productionEffectJournal, inner.productionEffectJournal)
         assert.notStrictEqual(outer.memoizerHandler, inner.memoizerHandler)
         assert.strictEqual(outerParser.parse(outer), Result.Parsed)
-        assert.strictEqual(outer.instructionTapeManager.length, 1)
-        assert.strictEqual(inner.instructionTapeManager.length, 0)
+        assert.strictEqual(outer.productionEffectJournal.length, 1)
+        assert.strictEqual(inner.productionEffectJournal.length, 0)
         outerParser.build(outer)
         assert.strictEqual(outer.productionManager.result, 'ab')
         assert.strictEqual(inner.productionManager.result, 'xy')

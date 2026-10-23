@@ -13,7 +13,7 @@ test('memoized terminal productions replay tokens and deferred instructions afte
     assert.strictEqual(parser.parse(ctx), Result.Parsed)
     assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('a', 0, TokenType.STRING), new Token('c', 1, TokenType.DEFAULT)])
     assert.strictEqual(ctx.productionManager.pos, 0)
-    assert.strictEqual(ctx.instructionTapeManager.length, 1)
+    assert.strictEqual(ctx.productionEffectJournal.length, 1)
 
     parser.build(ctx)
     assert.strictEqual(ctx.productionManager.result, 'a')
@@ -33,5 +33,5 @@ test('memoized recognition replays each character token without creating product
         new Token('b', 1, TokenType.DEFAULT),
         new Token('c', 2, TokenType.DEFAULT)
     ])
-    assert.strictEqual(ctx.instructionTapeManager.length, 0)
+    assert.strictEqual(ctx.productionEffectJournal.length, 0)
 })

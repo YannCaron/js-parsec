@@ -35,7 +35,7 @@ export default class BacktrackingHandler<T> {
                 symbolPos: this._ctx.symbolManager.pos,
                 builderPos: this._ctx.symbolManager.builderPos,
                 tokensPos: this._ctx.tokenManager.pos,
-                tapeLength: this._ctx.instructionTapeManager.length,
+                productionEffectsLength: this._ctx.productionEffectJournal.length,
                 symbolEffectsLength: this._ctx.symbolEffectJournal.length
             }
 
@@ -50,7 +50,7 @@ export default class BacktrackingHandler<T> {
                 this._ctx.symbolManager.pos = backup.symbolPos
                 this._ctx.symbolManager.builderPos = backup.builderPos
                 this._ctx.tokenManager.pos = backup.tokensPos
-                this._ctx.instructionTapeManager.removeFrom(backup.tapeLength)
+                this._ctx.productionEffectJournal.removeFrom(backup.productionEffectsLength)
                 this._ctx.symbolEffectJournal.removeFrom(backup.symbolEffectsLength)
             }
 

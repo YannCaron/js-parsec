@@ -15,7 +15,7 @@ import {
     sequence,
     wordIs
 } from '../index.ts'
-import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/InstructionTapeManager.ts'
+import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/ProductionEffectJournal.ts'
 
 class CountedParsem<T> extends ParsemDecorator<T> {
 
@@ -43,10 +43,10 @@ class CountedParsem<T> extends ParsemDecorator<T> {
     }
 }
 
-type TapeEntry = { kind: 'value', symbol: string } | { kind: 'aggregate', arity: number }
+type ProductionEntry = { kind: 'value', symbol: string } | { kind: 'aggregate', arity: number }
 
-function tapeEntries<T>(ctx: Context<T>): TapeEntry[] {
-    return Array.from(ctx.instructionTapeManager.queue, (instruction): TapeEntry => {
+function productionEntries<T>(ctx: Context<T>): ProductionEntry[] {
+    return Array.from(ctx.productionEffectJournal.queue, (instruction): ProductionEntry => {
         if (instruction instanceof PushValueInstruction) {
             return { kind: 'value', symbol: instruction.symbol }
         }
@@ -56,8 +56,8 @@ function tapeEntries<T>(ctx: Context<T>): TapeEntry[] {
     })
 }
 
-function assertTape<T>(ctx: Context<T>, expected: TapeEntry[]): void {
-    assert.deepStrictEqual(tapeEntries(ctx), expected)
+function assertProductionEffects<T>(ctx: Context<T>, expected: ProductionEntry[]): void {
+    assert.deepStrictEqual(productionEntries(ctx), expected)
 }
 
 function parseUnderTest<T>(parser: Parsem<T>, ctx: Context<T>): Result {
@@ -81,7 +81,7 @@ describe('Packrat recognition memoization invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
         assert.strictEqual(body.count(ctx, 0), 1, 'Successful recognition must survive alternative rollback')
     })
 
@@ -94,7 +94,7 @@ describe('Packrat recognition memoization invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
         assert.strictEqual(body.count(ctx, 0), 1, 'NotParsed must be memoized, including partial failures')
     })
 
@@ -111,7 +111,7 @@ describe('Packrat recognition memoization invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
         assert.strictEqual(body.count(ctx, 0), 1, 'Continue is a completed memo entry, not an absent entry')
     })
 
@@ -130,7 +130,7 @@ describe('Packrat recognition memoization invariants', () => {
             assert.strictEqual(ctx.sourceManager.pos, 0)
             assert.strictEqual(ctx.sourceManager.current, null)
             assert.deepStrictEqual(ctx.productionManager.stack, [])
-            assertTape(ctx, [])
+            assertProductionEffects(ctx, [])
             assert.strictEqual(body.count(ctx, 0), 1, 'EOF must be a valid memo position')
         })
     }
@@ -151,7 +151,7 @@ describe('Packrat recognition memoization invariants', () => {
             assert.strictEqual(parseUnderTest(rule, ctx), Result.NotParsed)
             assert.strictEqual(ctx.sourceManager.pos, 0)
             assert.deepStrictEqual(ctx.productionManager.stack, [])
-            assertTape(ctx, [])
+            assertProductionEffects(ctx, [])
             assert.ok(body.evaluations.length <= length + 1,
                 `Expected at most ${length + 1} evaluations; observed ${body.evaluations.length}`)
 
@@ -179,12 +179,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(grammar(false), reference), Result.Parsed)
         assert.deepStrictEqual(reference.productionManager.stack, ['a'])
-        assertTape(reference, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(reference, [{ kind: 'value', symbol: 'a' }])
 
         assert.strictEqual(parseUnderTest(grammar(true), actual), Result.Parsed)
         assert.strictEqual(actual.sourceManager.pos, reference.sourceManager.pos)
         assert.deepStrictEqual(actual.productionManager.stack, reference.productionManager.stack)
-        assert.deepStrictEqual(tapeEntries(actual), tapeEntries(reference))
+        assert.deepStrictEqual(productionEntries(actual), productionEntries(reference))
     })
 
     test('a cache hit restores instructions and defers callbacks until the selected tape is applied', () => {
@@ -206,9 +206,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(body.count(ctx, 0), 1)
         assert.deepStrictEqual(calls, [])
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
 
-        const [instruction] = ctx.instructionTapeManager.queue
+        const [instruction] = ctx.productionEffectJournal.queue
         assert.ok(instruction instanceof PushValueInstruction)
         assert.strictEqual(instruction.producer, producer)
         assert.strictEqual(ctx.memoizerHandler.search(0, rule)?.instructionsDelta[0], instruction)
@@ -234,12 +234,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(grammar(false), reference), Result.NotParsed)
         assert.strictEqual(reference.sourceManager.pos, 0)
         assert.deepStrictEqual(reference.productionManager.stack, [])
-        assertTape(reference, [])
+        assertProductionEffects(reference, [])
 
         assert.strictEqual(parseUnderTest(grammar(true), actual), Result.NotParsed)
         assert.strictEqual(actual.sourceManager.pos, reference.sourceManager.pos)
         assert.deepStrictEqual(actual.productionManager.stack, reference.productionManager.stack)
-        assert.deepStrictEqual(tapeEntries(actual), tapeEntries(reference))
+        assert.deepStrictEqual(productionEntries(actual), productionEntries(reference))
     })
 
     test('distinct Optional instances retain independent memo cells for the same operand', () => {
@@ -258,7 +258,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.notStrictEqual(firstMemo, secondMemo)
         assert.strictEqual(ctx.sourceManager.pos, 0)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
     })
 
     test('ordered choice still tries the following alternative after Continue', () => {
@@ -269,7 +269,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
     })
 
     test('reused Continue productions record no instructions and execute no callbacks', () => {
@@ -290,7 +290,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(calls, [])
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
     })
 
     test('different rule identities with the same text do not share semantic results', () => {
@@ -306,7 +306,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.productionManager.result, 'second')
         assert.strictEqual(ctx.sourceManager.pos, 2)
-        assertTape(ctx, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
     })
 
     test('different Choice instances at the same offset keep their own alternatives', () => {
@@ -320,7 +320,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.deepStrictEqual(ctx.productionManager.result, [])
         assert.strictEqual(ctx.sourceManager.pos, 1)
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
     })
 
     test('the same rule at different offsets records each production in order', () => {
@@ -333,7 +333,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(sequence(rule, rule), ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.deepStrictEqual(ctx.productionManager.result, ['a', 'b'])
-        assertTape(ctx, [
+        assertProductionEffects(ctx, [
             { kind: 'value', symbol: 'a' },
             { kind: 'value', symbol: 'b' }
         ])
@@ -352,9 +352,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(first.sourceManager.pos, 1)
         assert.strictEqual(failed.sourceManager.pos, 0)
         assert.strictEqual(last.sourceManager.pos, 1)
-        assertTape(failed, [])
-        assertTape(first, [{ kind: 'value', symbol: 'a' }])
-        assert.deepStrictEqual(tapeEntries(first), tapeEntries(last))
+        assertProductionEffects(failed, [])
+        assertProductionEffects(first, [{ kind: 'value', symbol: 'a' }])
+        assert.deepStrictEqual(productionEntries(first), productionEntries(last))
         assert.deepStrictEqual(first.productionManager.stack, ['a'])
         assert.deepStrictEqual(failed.productionManager.stack, [])
         assert.deepStrictEqual(last.productionManager.stack, ['a'])
@@ -369,7 +369,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const first = new Context<string>('a')
 
         assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
-        assertTape(first, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(first, [{ kind: 'value', symbol: 'a' }])
         rule.ref = productT(wordIs<string>('b'), value => value)
 
         const second = new Context<string>('b')
@@ -377,10 +377,10 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
         assert.strictEqual(parseUnderTest(parser, oldSource), Result.NotParsed)
-        assertTape(second, [{ kind: 'value', symbol: 'b' }])
+        assertProductionEffects(second, [{ kind: 'value', symbol: 'b' }])
         assert.strictEqual(second.productionManager.result, 'b')
         assert.strictEqual(oldSource.sourceManager.pos, 0)
-        assertTape(oldSource, [])
+        assertProductionEffects(oldSource, [])
     })
 
     test('a shared reduction uses the current preceding stack, not the first alternative snapshot', () => {
@@ -395,7 +395,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 3)
         assert.strictEqual(ctx.productionManager.result, '2a')
-        assertTape(ctx, [
+        assertProductionEffects(ctx, [
             { kind: 'value', symbol: '1' },
             { kind: 'value', symbol: 'a' },
             { kind: 'aggregate', arity: 2 }
@@ -420,7 +420,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
                 { symbol: 'a', pos: 0, type: capturedFirst ? TokenType.DEFAULT : TokenType.STRING },
                 { symbol: 'c', pos: 1, type: TokenType.DEFAULT }
             ])
-            assertTape(ctx, capturedFirst ? [] : [{ kind: 'value', symbol: 'a' }])
+            assertProductionEffects(ctx, capturedFirst ? [] : [{ kind: 'value', symbol: 'a' }])
             parser.build(ctx)
             assert.deepStrictEqual(ctx.productionManager.stack, capturedFirst ? [] : ['a'])
         })
@@ -437,7 +437,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
         assert.strictEqual(body.count(ctx, 0), 1, 'Recognition inside a capture must survive rollback')
-        assertTape(ctx, [{ kind: 'value', symbol: 'ac' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'ac' }])
         parser.build(ctx)
         assert.strictEqual(ctx.productionManager.result, 'ac')
     })
@@ -467,7 +467,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
                 { symbol: text + 'b', pos: 0, type: TokenType.STRING },
                 { symbol: 'c', pos: text.length + 1, type: TokenType.DEFAULT }
             ])
-            assertTape(ctx, [{ kind: 'value', symbol: text + 'b' }])
+            assertProductionEffects(ctx, [{ kind: 'value', symbol: text + 'b' }])
 
             parser.build(ctx)
 
@@ -496,7 +496,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
             { symbol: 'b', pos: 1, type: TokenType.STRING },
             { symbol: 'ac', pos: 0, type: TokenType.STRING }
         ])
-        assertTape(ctx, [{ kind: 'value', symbol: 'b' }, { kind: 'value', symbol: 'ac' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'b' }, { kind: 'value', symbol: 'ac' }])
 
         parser.build(ctx)
 
@@ -526,7 +526,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => ({ symbol: token.symbol, pos: token.pos, type: token.type })), [
             { symbol: 'ab', pos: 0, type: TokenType.STRING }
         ])
-        assertTape(ctx, [{ kind: 'value', symbol: 'ab' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'ab' }])
 
         parser.build(ctx)
 
@@ -553,7 +553,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
             assert.strictEqual(ctx.sourceManager.pos, 2)
             assert.deepStrictEqual(ctx.productionManager.stack, [value])
             assert.strictEqual(ctx.productionManager.result, value)
-            assertTape(ctx, [{ kind: 'value', symbol: 'a' }])
+            assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
         })
     }
 
@@ -571,7 +571,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 4)
         assert.deepStrictEqual(ctx.productionManager.result, [1, ['a', 'b']])
-        assertTape(ctx, [
+        assertProductionEffects(ctx, [
             { kind: 'value', symbol: '1' },
             { kind: 'value', symbol: 'a' },
             { kind: 'value', symbol: 'b' },
@@ -589,7 +589,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.deepStrictEqual(ctx.productionManager.result, [1, 'constant'])
-        assertTape(ctx, [
+        assertProductionEffects(ctx, [
             { kind: 'value', symbol: '1' },
             { kind: 'aggregate', arity: 0 }
         ])
@@ -613,7 +613,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parser.parse(ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 5)
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assertTape(ctx, [
+        assertProductionEffects(ctx, [
             { kind: 'value', symbol: '1' },
             { kind: 'value', symbol: 'a' },
             { kind: 'value', symbol: 'b' },
@@ -632,7 +632,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         const second = new Context<{ value: string }>('aa')
 
         assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
-        assertTape(first, [
+        assertProductionEffects(first, [
             { kind: 'value', symbol: 'a' },
             { kind: 'value', symbol: 'a' }
         ])
@@ -644,7 +644,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
         assert.deepStrictEqual(second.productionManager.stack, [{ value: 'a' }, { value: 'a' }])
         assert.notStrictEqual(first.productionManager.stack[0], second.productionManager.stack[0])
-        assert.deepStrictEqual(tapeEntries(first), tapeEntries(second))
+        assert.deepStrictEqual(productionEntries(first), productionEntries(second))
     })
 
     test('produced closures preserve identity and remain callable after rollback', () => {
@@ -659,7 +659,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.productionManager.uniqueResult, callback)
         assert.strictEqual(ctx.productionManager.uniqueResult(), 42)
-        assertTape(ctx, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
     })
 
     test('an exception remains fatal and does not poison a fresh parse context', () => {
@@ -677,7 +677,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(rule, ctx), Result.Parsed)
         assert.strictEqual(ctx.productionManager.result, 'a')
-        assertTape(ctx, [{ kind: 'value', symbol: 'a' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
     })
 
     test('memoization must not turn a successful prefix into a complete parse', () => {
@@ -691,7 +691,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(parseUnderTest(parser, ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.strictEqual(ctx.sourceManager.current, '!')
-        assertTape(ctx, [])
+        assertProductionEffects(ctx, [])
         assert.throws(() => ctx.productionManager.result, /Source not completelly parsed/)
     })
 })
@@ -717,7 +717,7 @@ describe('Packrat recursive cycle invariants', () => {
             )
             assert.strictEqual(ctx.sourceManager.pos, 0)
             assert.deepStrictEqual(ctx.productionManager.stack, [])
-            assertTape(ctx, [])
+            assertProductionEffects(ctx, [])
         })
     }
 })
@@ -753,7 +753,7 @@ describe('Productive seed-growing contracts', () => {
             assert.deepStrictEqual(numbers, [])
             assert.deepStrictEqual(additions, [])
             assert.deepStrictEqual(ctx.productionManager.stack, [])
-            assertTape(ctx, [
+            assertProductionEffects(ctx, [
                 { kind: 'value', symbol: '1' }, { kind: 'value', symbol: '2' },
                 { kind: 'aggregate', arity: 2 }, { kind: 'value', symbol: '3' },
                 { kind: 'aggregate', arity: 2 }
@@ -778,7 +778,7 @@ describe('Productive seed-growing contracts', () => {
         assert.strictEqual(ctx.sourceManager.current, '+')
         assert.deepStrictEqual(numbers, [])
         assert.deepStrictEqual(additions, [])
-        assertTape(ctx, [{ kind: 'value', symbol: '1' }, { kind: 'value', symbol: '2' }, { kind: 'aggregate', arity: 2 }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: '1' }, { kind: 'value', symbol: '2' }, { kind: 'aggregate', arity: 2 }])
         assert.deepStrictEqual(ctx.tokenManager.tokens.map(token => [token.symbol, token.pos]), [['1', 0], ['+', 1], ['2', 2]])
         parser.build(ctx)
         assert.deepStrictEqual(ctx.productionManager.stack, [3])
@@ -798,7 +798,7 @@ describe('Productive seed-growing contracts', () => {
         assert.strictEqual(rule.parse(ctx), Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.strictEqual(extensions, 0)
-        assertTape(ctx, [{ kind: 'value', symbol: '1' }])
+        assertProductionEffects(ctx, [{ kind: 'value', symbol: '1' }])
         rule.build(ctx)
         assert.strictEqual(ctx.productionManager.result, 1)
         assert.strictEqual(extensions, 0)

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, Token, TokenType, Utils, expression, wordIs } from '../../index.ts'
-import { PushValueInstruction } from '../../src/runtime/manager/InstructionTapeManager.ts'
+import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 import { ReadSymbolInstruction, type SymbolInstruction } from '../../src/runtime/manager/SymbolEffectJournal.ts'
 
 type MemoEntry = NonNullable<ReturnType<Context<string>['memoizerHandler']['search']>>
@@ -115,7 +115,7 @@ describe('Packrat memo table invariants', () => {
 
         const result = ctx.backtrackingHandler.handle(current => {
             current.next()
-            current.instructionTapeManager.append(new PushValueInstruction('discarded'))
+            current.productionEffectJournal.append(new PushValueInstruction('discarded'))
             current.memoizerHandler.memoize(0, parsem, entry)
 
             return Result.NotParsed
@@ -125,7 +125,7 @@ describe('Packrat memo table invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 0)
         assert.deepStrictEqual(ctx.tokenManager.tokens, [])
         assert.deepStrictEqual(ctx.productionManager.stack, [])
-        assert.strictEqual(ctx.instructionTapeManager.length, 0)
+        assert.strictEqual(ctx.productionEffectJournal.length, 0)
         assert.deepStrictEqual(ctx.memoizerHandler.search(0, parsem), entry)
     })
 
@@ -153,8 +153,8 @@ describe('Packrat memo table invariants', () => {
         assert.strictEqual(result, Result.Parsed)
         assert.strictEqual(ctx.sourceManager.pos, 2)
         assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
-        assert.strictEqual(ctx.instructionTapeManager.length, 1)
-        ctx.instructionTapeManager.apply(ctx)
+        assert.strictEqual(ctx.productionEffectJournal.length, 1)
+        ctx.productionEffectJournal.apply(ctx)
         assert.deepStrictEqual(ctx.productionManager.result, ['prefix', 'ab'])
         assert.deepStrictEqual(ctx.tokenManager.tokens, [new Token('ab', 0, TokenType.STRING)])
         assert.strictEqual(ctx.symbolManager.pos, 0)
@@ -300,6 +300,6 @@ describe('Packrat handler integration invariants', () => {
         assert.strictEqual(ctx.sourceManager.pos, 1)
         assert.deepStrictEqual(ctx.tokenManager.tokens, tokens)
         assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
-        assert.strictEqual(ctx.instructionTapeManager.length, 0)
+        assert.strictEqual(ctx.productionEffectJournal.length, 0)
     })
 })

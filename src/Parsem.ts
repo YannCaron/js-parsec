@@ -6,7 +6,7 @@ export abstract class Parsem<T> {
     abstract parse(ctx: Context<T>): Result
 
     public build(ctx: Context<T>) {
-        ctx.instructionTapeManager.apply(ctx)
+        ctx.productionEffectJournal.apply(ctx)
     }
 
     public evaluate(src: string): T[] | null {

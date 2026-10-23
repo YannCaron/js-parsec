@@ -81,7 +81,7 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 
 }
 
-export default class InstructionTapeManager<T> {
+export default class ProductionEffectJournal<T> {
 
     private readonly _queue: Queue<Instruction<T>>
     private readonly _stackDepths: number[] = [0]
@@ -114,7 +114,7 @@ export default class InstructionTapeManager<T> {
         }
     }
 
-    subTapeFrom(start: number): Array<Instruction<T>> {
+    subJournalFrom(start: number): Array<Instruction<T>> {
         return this._queue.slice(start)
     }
 
