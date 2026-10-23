@@ -15,7 +15,8 @@ class WordIs<T> extends Parsem<T> {
         if (this._str === '') return Result.Continue
 
         return ctx.backtrackingHandler.handle(ctx => {
-            for (const chr of this._str) {
+            for (let i = 0; i < this._str.length; i++) {
+                const chr = this._str.charAt(i)
                 if (!ctx.sourceManager.current || chr !== ctx.sourceManager.current)
                     return Result.NotParsed
                 ctx.next()
