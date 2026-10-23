@@ -51,6 +51,19 @@ describe('Production effect journal value and arity contracts', () => {
     }
 
     for (const arity of [-1, .5, 1.5, NaN, Infinity, -Infinity]) {
+        test(`ProductionManager rejects invalid arity ${arity} before consuming values`, () => {
+            const ctx = new Context<unknown>('')
+            ctx.productionManager.append('prefix')
+            let calls = 0
+
+            assert.throws(() => ctx.productionManager.produce(0, (...values) => {
+                calls++
+                return values
+            }, arity), /arity/i)
+
+            assert.strictEqual(calls, 0)
+            assert.deepStrictEqual(ctx.productionManager.stack, ['prefix'])
+        })
         test(`an aggregator rejects invalid arity ${arity} before consuming values`, () => {
             const ctx = new Context<unknown>('')
             let calls = 0
@@ -88,6 +101,15 @@ describe('Production effect journal value and arity contracts', () => {
         new PushAggregatorInstruction<unknown>(2, (left, right) => [left, right]).apply(ctx)
 
         assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [4, 5]])
+    })
+
+    test('ProductionManager preserves undefined arguments and preceding values', () => {
+        const ctx = new Context<unknown>('')
+        for (const value of ['prefix', 1, undefined, 2]) ctx.productionManager.append(value)
+
+        ctx.productionManager.produce(1, (...values) => values)
+
+        assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [1, undefined, 2]])
     })
 })
 
