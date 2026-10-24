@@ -14,7 +14,8 @@ describe('Packrat memo table invariants', () => {
 
     test('a missing memo entry is distinct from all completed statuses', () => {
         const ctx = new Context<string>('a')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
 
         assert.strictEqual(ctx.memoizerHandler.search(0, parsem), undefined)
         assert.strictEqual(ctx.memoizerHandler.search(1, parsem), undefined)
@@ -23,7 +24,8 @@ describe('Packrat memo table invariants', () => {
     for (const result of [Result.Parsed, Result.NotParsed, Result.Continue]) {
         test(`the memo table retains ${result} without changing the parsing state`, () => {
             const ctx = new Context<string>('a')
-            const parsem = expression<string>(wordIs<string>('a'))
+            const parsem = expression<string>()
+            parsem.ref = wordIs<string>('a')
             const entry = memoEntry(result, result === Result.Parsed ? 1 : 0)
 
             ctx.memoizerHandler.memoize(0, parsem, entry)
@@ -38,8 +40,10 @@ describe('Packrat memo table invariants', () => {
 
     test('memo entries at different positions and under different keys stay independent', () => {
         const ctx = new Context<string>('ab')
-        const parsem = expression<string>(wordIs<string>('a'))
-        const otherParsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
+        const otherParsem = expression<string>()
+        otherParsem.ref = wordIs<string>('a')
         const first = memoEntry(Result.Parsed, 1)
         const second = memoEntry(Result.NotParsed, 1)
         const other = memoEntry(Result.Continue, 0)
@@ -60,8 +64,10 @@ describe('Packrat memo table invariants', () => {
 
     test('replacing one memo entry preserves neighboring positions and keys', () => {
         const ctx = new Context<string>('ab')
-        const parsem = expression<string>(wordIs<string>('a'))
-        const otherParsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
+        const otherParsem = expression<string>()
+        otherParsem.ref = wordIs<string>('a')
         const neighbor = memoEntry(Result.Continue, 1)
         const other = memoEntry(Result.NotParsed, 0)
         const replacement = memoEntry(Result.NotParsed, 0)
@@ -80,7 +86,8 @@ describe('Packrat memo table invariants', () => {
         const first = new Context<string>('a')
         const sameSource = new Context<string>('a')
         const otherSource = new Context<string>('b')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         const success = memoEntry(Result.Parsed, 1)
         first.memoizerHandler.memoize(0, parsem, success)
 
@@ -94,7 +101,8 @@ describe('Packrat memo table invariants', () => {
     test('EOF is a valid memo position, including position zero in empty input', () => {
         for (const source of ['', 'a']) {
             const ctx = new Context<string>(source)
-            const parsem = expression<string>(wordIs<string>('a'))
+            const parsem = expression<string>()
+            parsem.ref = wordIs<string>('a')
             ctx.sourceManager.pos = source.length
             const entry = memoEntry(Result.Continue, source.length)
 
@@ -110,7 +118,8 @@ describe('Packrat memo table invariants', () => {
 
     test('alternative rollback restores parsing state while retaining recognition entries', () => {
         const ctx = new Context<string>('a')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         const entry = memoEntry(Result.Parsed, 1)
 
         const result = ctx.backtrackingHandler.handle(current => {
@@ -131,7 +140,8 @@ describe('Packrat memo table invariants', () => {
 
     test('memo access leaves an active capture and preceding semantic values intact', () => {
         const ctx = new Context<string>('ab')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         ctx.productionManager.append('prefix')
         const entry = memoEntry(Result.Parsed, 1)
 
@@ -206,7 +216,8 @@ describe('Packrat handler integration invariants', () => {
     for (const expected of [Result.Parsed, Result.NotParsed, Result.Continue]) {
         test(`MemoizerHandler.handle caches ${expected} and restores its final position without evaluating twice`, () => {
             const ctx = new Context<string>('a')
-            const parsem = expression<string>(wordIs<string>('a'))
+            const parsem = expression<string>()
+            parsem.ref = wordIs<string>('a')
             const finalPos = expected === Result.Parsed ? 1 : 0
             let calls = 0
 
@@ -240,8 +251,10 @@ describe('Packrat handler integration invariants', () => {
 
     test('cache misses distinguish parser instances and starting positions', () => {
         const ctx = new Context<string>('aa')
-        const first = expression<string>(wordIs<string>('a'))
-        const second = expression<string>(wordIs<string>('a'))
+        const first = expression<string>()
+        first.ref = wordIs<string>('a')
+        const second = expression<string>()
+        second.ref = wordIs<string>('a')
         let calls = 0
         const evaluate = (current: Context<string>) => {
             calls++
@@ -273,7 +286,8 @@ describe('Packrat handler integration invariants', () => {
     })
 
     test('the same parser is evaluated separately in every context', () => {
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         const contexts = [new Context<string>('a'), new Context<string>('a'), new Context<string>('b')]
         const expected = [Result.Parsed, Result.Parsed, Result.NotParsed]
         let calls = 0
@@ -298,7 +312,8 @@ describe('Packrat handler integration invariants', () => {
 
     test('an evaluation that throws does not create a completed memo entry', () => {
         const ctx = new Context<string>('a')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         const failure = new Error('producer failed')
         let calls = 0
 
@@ -327,7 +342,8 @@ describe('Packrat handler integration invariants', () => {
 
     test('a memo entry ending before its starting position is rejected without rewinding', () => {
         const ctx = new Context<string>('ab')
-        const parsem = expression<string>(wordIs<string>('a'))
+        const parsem = expression<string>()
+        parsem.ref = wordIs<string>('a')
         ctx.next()
         ctx.productionManager.append('prefix')
         ctx.memoizerHandler.memoize(1, parsem, {

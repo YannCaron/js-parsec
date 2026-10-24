@@ -71,7 +71,8 @@ describe('Packrat recognition memoization invariants', () => {
 
     test('a successful rule is evaluated once at an offset and replayed after rollback', () => {
         const body = new CountedParsem(wordIs<string>('a'))
-        const rule = expression(body)
+        const rule = expression<string>()
+        rule.ref = body
         const parser = choice(
             sequence(choice(rule), wordIs<string>('b')),
             sequence(choice(rule), wordIs<string>('c'))
@@ -87,7 +88,8 @@ describe('Packrat recognition memoization invariants', () => {
 
     test('a partially failed rule is evaluated once and leaves no replayed state', () => {
         const body = new CountedParsem(wordIs<string>('ab'))
-        const rule = expression(body)
+        const rule = expression<string>()
+        rule.ref = body
         const parser = choice(rule, rule, wordIs<string>('ac'))
         const ctx = new Context<string>('ac')
 
@@ -100,7 +102,8 @@ describe('Packrat recognition memoization invariants', () => {
 
     test('Continue is memoized without becoming a consuming success or a failure', () => {
         const body = new CountedParsem(optional(wordIs<string>('z')))
-        const rule = expression(body)
+        const rule = expression<string>()
+        rule.ref = body
         const nullable = optional(rule)
         const parser = choice(
             sequence(nullable, wordIs<string>('x')),
@@ -121,7 +124,8 @@ describe('Packrat recognition memoization invariants', () => {
     ] as const) {
         test(`${name} at EOF is evaluated once without advancing or recording instructions`, () => {
             const body = new CountedParsem(wordIs<string>(terminal))
-            const rule = expression(body)
+            const rule = expression<string>()
+            rule.ref = body
             const nullable = optional(rule)
             const parser = name === 'Continue' ? sequence(nullable, nullable) : choice(rule, rule)
             const ctx = new Context<string>('')
@@ -194,7 +198,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
             return symbol.toUpperCase()
         }
         const body = new CountedParsem(productT(wordIs<string>('a'), producer))
-        const rule = expression(body)
+        const rule = expression<string>()
+        rule.ref = body
         const parser = choice(
             sequence(choice(rule), wordIs<string>('b')),
             sequence(choice(rule), wordIs<string>('c'))
@@ -262,7 +267,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('ordered choice still tries the following alternative after Continue', () => {
-        const nullable = expression(wordIs<string>(''))
+        const nullable = expression<string>()
+        nullable.ref = wordIs<string>('')
         const parser = choice(nullable, wordIs<string>('b'))
         const ctx = new Context<string>('b')
 
@@ -279,11 +285,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
             return value
         })
-        const rule = expression(productNT<string>(terminal, () => {
+        const rule = expression<string>()
+        rule.ref = productNT<string>(terminal, () => {
             calls.push('non-terminal')
 
             return 'unexpected'
-        }))
+        })
         const ctx = new Context<string>('b')
 
         assert.strictEqual(parseUnderTest(sequence(optional(rule), optional(rule), wordIs<string>('b')), ctx), Result.Parsed)
@@ -294,8 +301,10 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('different rule identities with the same text do not share semantic results', () => {
-        const first = expression(productT(wordIs<string>('a'), () => 'first').type(TokenType.STRING))
-        const second = expression(productT(wordIs<string>('a'), () => 'second').type(TokenType.STRING))
+        const first = expression<string>()
+        first.ref = productT(wordIs<string>('a'), () => 'first').type(TokenType.STRING)
+        const second = expression<string>()
+        second.ref = productT(wordIs<string>('a'), () => 'second').type(TokenType.STRING)
         const parser = choice(
             sequence(choice(first), wordIs<string>('b')),
             sequence(choice(second), wordIs<string>('c'))
@@ -324,10 +333,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('the same rule at different offsets records each production in order', () => {
-        const rule = choice(expression(productT(
+        const ruleExpression = expression<string>()
+        ruleExpression.ref = productT(
             choice(wordIs<string>('a'), wordIs<string>('b')),
             value => value
-        ).type(TokenType.STRING)))
+        ).type(TokenType.STRING)
+        const rule = choice(ruleExpression)
         const ctx = new Context<string>('ab')
 
         assert.strictEqual(parseUnderTest(sequence(rule, rule), ctx), Result.Parsed)
@@ -341,7 +352,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
     test('successes and failures do not leak between sources or fresh contexts', () => {
         const body = new CountedParsem(productT(wordIs<string>('a'), value => value))
-        const rule = choice(expression(body))
+        const ruleExpression = expression<string>()
+        ruleExpression.ref = body
+        const rule = choice(ruleExpression)
         const first = new Context<string>('a')
         const failed = new Context<string>('b')
         const last = new Context<string>('a')
@@ -364,7 +377,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('a changed expression reference is respected in a new context', () => {
-        const rule = expression(productT(wordIs<string>('a'), value => value))
+        const rule = expression<string>()
+        rule.ref = productT(wordIs<string>('a'), value => value)
         const parser = choice(rule)
         const first = new Context<string>('a')
 
@@ -385,7 +399,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
     test('a shared reduction uses the current preceding stack, not the first alternative snapshot', () => {
         const letter = productT(wordIs<unknown>('a'), value => value).type(TokenType.STRING)
-        const rule = choice(expression(productNT(letter, (left, right) => `${left}${right}`, 2)))
+        const ruleExpression = expression<unknown>()
+        ruleExpression.ref = productNT(letter, (left, right) => `${left}${right}`, 2)
+        const rule = choice(ruleExpression)
         const parser = choice(
             sequence(productT(wordIs<unknown>('1'), () => 1).type(TokenType.NUMBER), rule, wordIs<unknown>('b')),
             sequence(productT(wordIs<unknown>('1'), () => 2).type(TokenType.NUMBER), rule, wordIs<unknown>('c'))
@@ -405,7 +421,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
     for (const capturedFirst of [false, true]) {
         test(`a shared recognition respects the active terminal builder when capture is ${capturedFirst ? 'abandoned' : 'selected'}`, () => {
             const body = new CountedParsem(wordIs<string>('a'))
-            const rule = choice(expression(body))
+            const ruleExpression = expression<string>()
+            ruleExpression.ref = body
+            const rule = choice(ruleExpression)
             const captured = productT(rule, value => value).type(TokenType.STRING)
             const parser = choice(
                 sequence(capturedFirst ? captured : rule, wordIs<string>('b')),
@@ -428,7 +446,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
     test('an enclosing capture receives only the selected characters after rollback', () => {
         const body = new CountedParsem(wordIs<string>('a'))
-        const rule = choice(expression(body))
+        const ruleExpression = expression<string>()
+        ruleExpression.ref = body
+        const rule = choice(ruleExpression)
         const parser = productT(choice(
             sequence(rule, wordIs<string>('b')),
             sequence(rule, wordIs<string>('c'))
@@ -542,7 +562,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
         ['null', null]
     ] as const) {
         test(`a shared terminal production preserves ${name} after rollback`, () => {
-            const rule = choice(expression(productT(wordIs<unknown>('a'), () => value)))
+            const ruleExpression = expression<unknown>()
+            ruleExpression.ref = productT(wordIs<unknown>('a'), () => value)
+            const rule = choice(ruleExpression)
             const parser = choice(
                 sequence(rule, wordIs<unknown>('b')),
                 sequence(rule, wordIs<unknown>('c'))
@@ -558,10 +580,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
     }
 
     test('rest arguments consume only values produced inside the reused reduction', () => {
-        const pair = choice(expression(productNT(sequence(
+        const pairExpression = expression<unknown>()
+        pairExpression.ref = productNT(sequence(
             productT(wordIs<unknown>('a'), value => value),
             productT(wordIs<unknown>('b'), value => value)
-        ), (...values) => values)))
+        ), (...values) => values)
+        const pair = choice(pairExpression)
         const parser = sequence(
             productT(wordIs<unknown>('1'), () => 1),
             choice(sequence(pair, wordIs<unknown>('x')), sequence(pair, wordIs<unknown>('c')))
@@ -580,7 +604,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('a zero-argument reduction leaves preceding values on the stack', () => {
-        const rule = choice(expression(productNT<unknown>(wordIs<unknown>('a'), () => 'constant')))
+        const ruleExpression = expression<unknown>()
+        ruleExpression.ref = productNT<unknown>(wordIs<unknown>('a'), () => 'constant')
+        const rule = choice(ruleExpression)
         const parser = sequence(
             productT(wordIs<unknown>('1'), () => 1),
             choice(sequence(rule, wordIs<unknown>('b')), sequence(rule, wordIs<unknown>('c')))
@@ -600,10 +626,12 @@ describe('Packrat state and semantic compatibility invariants', () => {
             productT(wordIs<unknown>('a'), value => value),
             productT(wordIs<unknown>('b'), value => value)
         ), (left, right) => `${left}${right}`)
-        const rule = choice(expression(productNT(sequence(
+        const ruleExpression = expression<unknown>()
+        ruleExpression.ref = productNT(sequence(
             pair,
             productT(wordIs<unknown>('c'), value => value)
-        ), (...values) => values)))
+        ), (...values) => values)
+        const rule = choice(ruleExpression)
         const parser = sequence(
             productT(wordIs<unknown>('1'), () => 1),
             choice(sequence(rule, wordIs<unknown>('x')), sequence(rule, wordIs<unknown>('d')))
@@ -626,7 +654,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('produced objects belong to separate occurrences and parse contexts', () => {
-        const rule = choice(expression(productT(wordIs<{ value: string }>('a'), value => ({ value }))))
+        const ruleExpression = expression<{ value: string; }>()
+        ruleExpression.ref = productT(wordIs<{ value: string }>('a'), value => ({ value }))
+        const rule = choice(ruleExpression)
         const parser = sequence(rule, rule)
         const first = new Context<{ value: string }>('aa')
         const second = new Context<{ value: string }>('aa')
@@ -649,7 +679,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
     test('produced closures preserve identity and remain callable after rollback', () => {
         const callback = () => 42
-        const rule = choice(expression(productT(wordIs<() => number>('a'), () => callback)))
+        const ruleExpression = expression<() => number>()
+        ruleExpression.ref = productT(wordIs<() => number>('a'), () => callback)
+        const rule = choice(ruleExpression)
         const parser = choice(
             sequence(rule, wordIs<() => number>('b')),
             sequence(rule, wordIs<() => number>('c'))
@@ -665,11 +697,13 @@ describe('Packrat state and semantic compatibility invariants', () => {
     test('an exception remains fatal and does not poison a fresh parse context', () => {
         const failure = new Error('semantic production failed')
         let shouldThrow = true
-        const rule = choice(expression(productT(wordIs<string>('a'), value => {
+        const ruleExpression = expression<string>()
+        ruleExpression.ref = productT(wordIs<string>('a'), value => {
             if (shouldThrow) throw failure
 
             return value
-        }).type(TokenType.STRING)))
+        }).type(TokenType.STRING)
+        const rule = choice(ruleExpression)
 
         assert.throws(() => parseUnderTest(rule, new Context<string>('a')), (error: unknown) => error === failure)
         shouldThrow = false
@@ -681,7 +715,9 @@ describe('Packrat state and semantic compatibility invariants', () => {
     })
 
     test('memoization must not turn a successful prefix into a complete parse', () => {
-        const rule = choice(expression(wordIs<string>('a')))
+        const ruleExpression = expression<string>()
+        ruleExpression.ref = wordIs<string>('a')
+        const rule = choice(ruleExpression)
         const parser = choice(
             sequence(rule, wordIs<string>('b')),
             sequence(rule, wordIs<string>('c'))
