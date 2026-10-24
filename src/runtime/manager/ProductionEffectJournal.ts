@@ -1,7 +1,7 @@
 import { Functions, Queue } from "@cyann/js-commons"
 import Context from "../Context.ts"
 
-export abstract class Instruction<T> {
+export abstract class ProductionEffect<T> {
 
     abstract apply(ctx: Context<T>): void
 
@@ -11,7 +11,7 @@ export abstract class Instruction<T> {
 
 }
 
-export class PushValueInstruction<T> extends Instruction<T> {
+export class PushValueProductionEffect<T> extends ProductionEffect<T> {
 
     private readonly _symbol: string
     private readonly _producer?: (v: string) => T
@@ -41,7 +41,7 @@ export class PushValueInstruction<T> extends Instruction<T> {
 
 }
 
-export class PushAggregatorInstruction<T> extends Instruction<T> {
+export class PushAggregatorProductionEffect<T> extends ProductionEffect<T> {
 
     private readonly _arity: number
     private readonly _producer: (...v: Array<T>) => T
@@ -84,10 +84,10 @@ export class PushAggregatorInstruction<T> extends Instruction<T> {
 
 export default class ProductionEffectJournal<T> {
 
-    private readonly _queue: Queue<Instruction<T>>
+    private readonly _queue: Queue<ProductionEffect<T>>
     private readonly _stackDepths: number[] = [0]
 
-    get queue(): Queue<Instruction<T>> {
+    get queue(): Queue<ProductionEffect<T>> {
         return this._queue
     }
 
@@ -96,7 +96,7 @@ export default class ProductionEffectJournal<T> {
     }
 
     constructor() {
-        this._queue = new Queue<Instruction<T>>
+        this._queue = new Queue<ProductionEffect<T>>
     }
 
     apply(ctx: Context<T>) {
@@ -105,7 +105,7 @@ export default class ProductionEffectJournal<T> {
         }
     }
 
-    append(...instructions: Instruction<T>[]): void {
+    append(...instructions: ProductionEffect<T>[]): void {
         let depth = this._stackDepths[this._stackDepths.length - 1]
 
         for (const instruction of instructions) {
@@ -115,7 +115,7 @@ export default class ProductionEffectJournal<T> {
         }
     }
 
-    subJournalFrom(start: number): Array<Instruction<T>> {
+    subJournalFrom(start: number): Array<ProductionEffect<T>> {
         return this._queue.slice(start)
     }
 

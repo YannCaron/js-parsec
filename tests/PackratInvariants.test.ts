@@ -15,7 +15,7 @@ import {
     sequence,
     wordIs
 } from '../index.ts'
-import { PushAggregatorInstruction, PushValueInstruction } from '../src/runtime/manager/ProductionEffectJournal.ts'
+import { PushAggregatorProductionEffect, PushValueProductionEffect } from '../src/runtime/manager/ProductionEffectJournal.ts'
 
 class CountedParsem<T> extends ParsemDecorator<T> {
 
@@ -47,11 +47,11 @@ type ProductionEntry = { kind: 'value', symbol: string } | { kind: 'aggregate', 
 
 function productionEntries<T>(ctx: Context<T>): ProductionEntry[] {
     return Array.from(ctx.productionEffectJournal.queue, (instruction): ProductionEntry => {
-        if (instruction instanceof PushValueInstruction) {
+        if (instruction instanceof PushValueProductionEffect) {
             return { kind: 'value', symbol: instruction.symbol }
         }
 
-        assert.ok(instruction instanceof PushAggregatorInstruction, 'Unexpected instruction on the production tape')
+        assert.ok(instruction instanceof PushAggregatorProductionEffect, 'Unexpected instruction on the production tape')
         return { kind: 'aggregate', arity: instruction.arity }
     })
 }
@@ -209,7 +209,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assertProductionEffects(ctx, [{ kind: 'value', symbol: 'a' }])
 
         const [instruction] = ctx.productionEffectJournal.queue
-        assert.ok(instruction instanceof PushValueInstruction)
+        assert.ok(instruction instanceof PushValueProductionEffect)
         assert.strictEqual(instruction.producer, producer)
         assert.strictEqual(ctx.memoizerHandler.search(0, rule)?.instructionsDelta[0], instruction)
 

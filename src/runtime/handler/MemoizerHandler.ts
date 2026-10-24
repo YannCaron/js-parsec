@@ -1,6 +1,6 @@
 import { Parsem } from "../../Parsem.ts";
 import Context from "../Context.ts";
-import { Instruction } from "../manager/ProductionEffectJournal.ts";
+import { ProductionEffect } from "../manager/ProductionEffectJournal.ts";
 import { Result } from "../Result.ts";
 import type { SymbolInstruction } from "../manager/SymbolEffectJournal.ts";
 import { PriorityQueue } from "@cyann/js-commons";
@@ -9,7 +9,7 @@ type ResultEntry<T> = {
     newPos: number,
     res: Result,
     symbolEffects: SymbolInstruction<T>[],
-    instructionsDelta: Instruction<T>[],
+    instructionsDelta: ProductionEffect<T>[],
 }
 
 export default class MemoizerHandler<T> {

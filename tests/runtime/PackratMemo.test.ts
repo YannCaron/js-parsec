@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, ParsemDecorator, ProductT, Result, Token, TokenType, choice, expression, sequence, wordIs } from '../../index.ts'
-import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
+import { PushValueProductionEffect } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 import { ReadSymbolInstruction, type SymbolInstruction } from '../../src/runtime/manager/SymbolEffectJournal.ts'
 
 type MemoEntry = NonNullable<ReturnType<Context<string>['memoizerHandler']['search']>>
@@ -115,7 +115,7 @@ describe('Packrat memo table invariants', () => {
 
         const result = ctx.backtrackingHandler.handle(current => {
             current.next()
-            current.productionEffectJournal.append(new PushValueInstruction('discarded'))
+            current.productionEffectJournal.append(new PushValueProductionEffect('discarded'))
             current.memoizerHandler.memoize(0, parsem, entry)
 
             return Result.NotParsed
@@ -332,7 +332,7 @@ describe('Packrat handler integration invariants', () => {
         ctx.productionManager.append('prefix')
         ctx.memoizerHandler.memoize(1, parsem, {
             ...memoEntry(Result.Parsed, 0, [new ReadSymbolInstruction<string>(1, 2)]),
-            instructionsDelta: [new PushValueInstruction('invalid')]
+            instructionsDelta: [new PushValueProductionEffect('invalid')]
         })
         const tokens = ctx.tokenManager.tokens
         let calls = 0

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Parsem, Result, Token, productT } from '../../index.ts'
-import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
+import { PushValueProductionEffect } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 
 class Recognizer extends Parsem<unknown> {
     private readonly _recognize: (ctx: Context<unknown>) => Result
@@ -41,7 +41,7 @@ describe('Recognition state invariants', () => {
     const mutations: Array<[string, (ctx: Context<unknown>) => void]> = [
         ['source position', ctx => ctx.next()],
         ['tokens', ctx => ctx.tokenManager.append(new Token('ghost', 0))],
-        ['production effect journal', ctx => ctx.productionEffectJournal.append(new PushValueInstruction('ghost'))],
+        ['production effect journal', ctx => ctx.productionEffectJournal.append(new PushValueProductionEffect('ghost'))],
         ['new capture', ctx => ctx.symbolManager.create()],
         ['removed capture', ctx => { ctx.symbolManager.consume() }],
         ['capture contents', ctx => ctx.symbolManager.append('ghost')],
@@ -72,7 +72,7 @@ describe('Recognition state invariants', () => {
         assert.strictEqual(ctx.backtrackingHandler.handle(current => {
             current.next()
             current.tokenManager.append(new Token('discarded', 0))
-            current.productionEffectJournal.append(new PushValueInstruction('discarded'))
+            current.productionEffectJournal.append(new PushValueProductionEffect('discarded'))
             current.symbolManager.create()
             current.symbolManager.append('discarded')
             return Result.NotParsed
