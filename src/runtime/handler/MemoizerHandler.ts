@@ -14,6 +14,8 @@ type ResultEntry<T> = {
 
 export default class MemoizerHandler<T> {
 
+    static readonly ACTIVE = true
+
     private readonly _ctx: Context<T>
     private readonly _memoizer: Map<number, Map<Parsem<T>, ResultEntry<T>>>
     private readonly _orderedIndex: PriorityQueue<number>
@@ -74,9 +76,11 @@ export default class MemoizerHandler<T> {
         try {
             const res = lambda(this._ctx)
 
-            const instructionsDelta = this._ctx.productionEffectJournal.subJournalFrom(productionEffectsPos)
-            const symbolEffects = this._ctx.symbolEffectJournal.subJournalFrom(symbolEffectsPos)
-            this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, symbolEffects, instructionsDelta })
+            if (MemoizerHandler.ACTIVE) {
+                const instructionsDelta = this._ctx.productionEffectJournal.subJournalFrom(productionEffectsPos)
+                const symbolEffects = this._ctx.symbolEffectJournal.subJournalFrom(symbolEffectsPos)
+                this.memoize(pos, parsem, { newPos: this._ctx.sourceManager.pos, res, symbolEffects, instructionsDelta })
+            }
 
             return res;
         } finally {
