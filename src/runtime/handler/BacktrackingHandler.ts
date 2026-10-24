@@ -3,6 +3,8 @@ import { Result } from "../Result.ts"
 
 export default class BacktrackingHandler<T> {
 
+    static readonly ACTIVE = true
+
     private readonly _ctx: Context<T>
     private _depth: number
     private _earliestBacktrackPosition : number
@@ -62,7 +64,7 @@ export default class BacktrackingHandler<T> {
             ))
                 throw new Error(`Error at ${this._ctx.sourceManager.pos} "continue" status cannot modify execution stack!`)
 
-            if (res === Result.NotParsed) {
+            if (BacktrackingHandler.ACTIVE && res === Result.NotParsed) {
                 this._ctx.sourceManager.pos = backup.pos
                 this._ctx.symbolManager.pos = backup.symbolPos
                 this._ctx.symbolManager.builderPos = backup.builderPos
