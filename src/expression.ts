@@ -1,7 +1,6 @@
 import Context from "./runtime/Context.ts"
 import { Parsem } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import Utils from "./runtime/Utils.ts"
 
 class Null<T> extends Parsem<T> {
     parse(_: Context<T>): Result {
@@ -37,8 +36,8 @@ class Expression<T> extends Parsem<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Utils.handleSeedGrowing(this, ctx,
-            ctx => this.ref.parse(ctx))
+        const res = this.ref.parse(ctx)
+        return res
 
     }
 

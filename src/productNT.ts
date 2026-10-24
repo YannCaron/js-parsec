@@ -1,7 +1,7 @@
 import Context from "./runtime/Context.ts"
 import { Parsem, ParsemDecorator } from "./Parsem.ts"
 import { Result } from "./runtime/Result.ts"
-import Utils from "./runtime/Utils.ts"
+import { PushAggregatorProductionEffect } from "./runtime/manager/ProductionEffectJournal.ts"
 
 class ProductNT<T> extends ParsemDecorator<T> {
 
@@ -27,12 +27,28 @@ class ProductNT<T> extends ParsemDecorator<T> {
 
     parse(ctx: Context<T>): Result {
 
-        return Utils.handleNTProduction<T>(
+        return ProductNT.handleProduction<T>(
             ctx, ctx => this.decorated.parse(ctx),
             this._producer,
             this._nbArgs
         )
 
+    }
+
+    static handleProduction<T>(ctx: Context<T>, lambda: (ctx: Context<T>) => Result, producer?: (...v: Array<T>) => T, nbArgs?: number): Result {
+
+        const productionEffectsLength = ctx.productionEffectJournal.length
+
+        // run encapsulated lambda
+        const res = lambda(ctx)
+
+        if (res !== Result.Parsed || !producer)
+            return res
+
+        const arity = nbArgs !== undefined ? nbArgs : ctx.productionEffectJournal.calculateStackDepth(productionEffectsLength, producer)
+        ctx.productionEffectJournal.append(new PushAggregatorProductionEffect<T>(arity, producer))
+
+        return Result.Parsed
     }
 
     toString(): string {
@@ -55,4 +71,4 @@ Parsem.prototype.productNT = function <T>(producer?: (...v: Array<T>) => T) {
     return productNT<T>(this, producer)
 }
 
-export {productNT, ProductNT}
+export { productNT, ProductNT }

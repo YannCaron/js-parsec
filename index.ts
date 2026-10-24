@@ -9,7 +9,6 @@ import SourceManager from './src/runtime/manager/SourceManager.ts'
 import TokenManager from './src/runtime/manager/TokenManager.ts'
 import SymbolManager from './src/runtime/manager/SymbolManager.ts'
 import ProductionManager from './src/runtime/manager/ProductionManager.ts'
-import Utils from './src/runtime/Utils.ts'
 import { Result } from './src/runtime/Result.ts'
 import Token from './src/runtime/Token.ts'
 import {
@@ -49,7 +48,6 @@ export {
     TokenManager,
     SymbolManager,
     ProductionManager,
-    Utils,
     Result,
     Token,
     TokenType,

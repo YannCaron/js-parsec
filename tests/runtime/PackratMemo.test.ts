@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { Context, ParsemDecorator, Result, Token, TokenType, Utils, choice, expression, sequence, wordIs } from '../../index.ts'
+import { Context, ParsemDecorator, ProductT, Result, Token, TokenType, choice, expression, sequence, wordIs } from '../../index.ts'
 import { PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 import { ReadSymbolInstruction, type SymbolInstruction } from '../../src/runtime/manager/SymbolEffectJournal.ts'
 
@@ -135,7 +135,7 @@ describe('Packrat memo table invariants', () => {
         ctx.productionManager.append('prefix')
         const entry = memoEntry(Result.Parsed, 1)
 
-        const result = Utils.handleTProduction(ctx, current => {
+        const result = ProductT.handleProduction(ctx, current => {
             current.next()
             current.memoizerHandler.memoize(0, parsem, entry)
 
