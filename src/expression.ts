@@ -28,9 +28,9 @@ class Expression<T> extends Parsem<T> {
         return this._name ?? 'Expression'
     }
 
-    constructor(ref: Parsem<T> = new Null<T>(), name?: string) {
+    constructor(name?: string) {
         super()
-        this._ref = ref
+        this._ref = new Null<T>()
         this._name = name
     }
 
@@ -47,8 +47,8 @@ class Expression<T> extends Parsem<T> {
 
 }
 
-function expression<T>(ref?: Parsem<T>, name?: string): Expression<T> {
-    return new Expression<T>(ref, name)
+function expression<T>(name?: string): Expression<T> {
+    return new Expression<T>(name)
 }
 
 export { expression, Expression }
