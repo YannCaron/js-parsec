@@ -42,6 +42,19 @@ with `npm run dev -- "7+8"`).
 >
 > ... and much more :wink: ...
 
+## Expression declarations
+
+`expression<T>(name?)` and `new Expression<T>(name?)` accept only an optional
+name. Assign the parser separately through `ref` before parsing:
+
+```ts
+const digit = expression<string>('Digit')
+digit.ref = charIn('0123456789')
+```
+
+Specify `<T>` explicitly when the type was previously inferred from a parser
+passed to `expression`. An expression without an assigned `ref` throws on parse.
+
 ## Runtime context
 
 `Context` exposes runtime state through managers and effect journals:
