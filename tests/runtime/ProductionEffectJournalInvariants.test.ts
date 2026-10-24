@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { Context, Result, productNT, productT, sequence, wordIs } from '../../index.ts'
-import { Instruction, PushAggregatorInstruction, PushValueInstruction } from '../../src/runtime/manager/ProductionEffectJournal.ts'
+import { ProductionEffect, PushAggregatorProductionEffect, PushValueProductionEffect } from '../../src/runtime/manager/ProductionEffectJournal.ts'
 
 describe('Production effect journal value and arity contracts', () => {
 
@@ -16,8 +16,8 @@ describe('Production effect journal value and arity contracts', () => {
             const ctx = new Context<unknown>('')
             let calls = 0
             ctx.productionManager.append('prefix')
-            ctx.productionEffectJournal.append(...values.map((value, index) => new PushValueInstruction<unknown>(String(index), () => value)))
-            ctx.productionEffectJournal.append(new PushAggregatorInstruction(values.length, (...args) => {
+            ctx.productionEffectJournal.append(...values.map((value, index) => new PushValueProductionEffect<unknown>(String(index), () => value)))
+            ctx.productionEffectJournal.append(new PushAggregatorProductionEffect(values.length, (...args) => {
                 calls++
                 assert.deepStrictEqual(args, [...values])
                 return args
@@ -71,7 +71,7 @@ describe('Production effect journal value and arity contracts', () => {
             ctx.productionManager.append('right')
 
             assert.throws(() => {
-                const instruction = new PushAggregatorInstruction<unknown>(arity, (...values) => { calls++; return values })
+                const instruction = new PushAggregatorProductionEffect<unknown>(arity, (...values) => { calls++; return values })
                 instruction.apply(ctx)
             }, error => error instanceof Error && /arity|argument|integer|entier/i.test(error.message))
 
@@ -96,9 +96,9 @@ describe('Production effect journal value and arity contracts', () => {
     test('valid zero and fixed arities preserve the preceding stack and argument order', () => {
         const ctx = new Context<unknown>('')
         ctx.productionManager.append('prefix')
-        new PushAggregatorInstruction<unknown>(0, () => 4).apply(ctx)
-        new PushValueInstruction<unknown>('5', () => 5).apply(ctx)
-        new PushAggregatorInstruction<unknown>(2, (left, right) => [left, right]).apply(ctx)
+        new PushAggregatorProductionEffect<unknown>(0, () => 4).apply(ctx)
+        new PushValueProductionEffect<unknown>('5', () => 5).apply(ctx)
+        new PushAggregatorProductionEffect<unknown>(2, (left, right) => [left, right]).apply(ctx)
 
         assert.deepStrictEqual(ctx.productionManager.stack, ['prefix', [4, 5]])
     })
@@ -129,10 +129,10 @@ function referenceStack(operations: Operation[]): number[] {
     return stack
 }
 
-function nativeInstruction(operation: Operation): Instruction<number> {
+function nativeInstruction(operation: Operation): ProductionEffect<number> {
     return operation.kind === 'push'
-        ? new PushValueInstruction(String(operation.value), Number)
-        : new PushAggregatorInstruction(operation.arity, (...values) => values.reduce((sum, value) => sum + value, 0))
+        ? new PushValueProductionEffect(String(operation.value), Number)
+        : new PushAggregatorProductionEffect(operation.arity, (...values) => values.reduce((sum, value) => sum + value, 0))
 }
 
 describe('Production effect journal model invariants', () => {
