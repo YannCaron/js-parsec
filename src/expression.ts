@@ -21,6 +21,8 @@ class Expression<T> extends Parsem<T> {
     }
 
     public set ref(v: Parsem<T>) {
+        if (!(this._ref instanceof Null))
+            throw new Error(`Expression reference cannot be replaced!`)
         this._ref = v;
     }
 
@@ -30,7 +32,7 @@ class Expression<T> extends Parsem<T> {
 
     constructor(name?: string) {
         super()
-        this._ref = new Null<T>()
+        this._ref = new Null<T>
         this._name = name
     }
 

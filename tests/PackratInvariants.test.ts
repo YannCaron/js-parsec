@@ -376,7 +376,7 @@ describe('Packrat state and semantic compatibility invariants', () => {
         assert.strictEqual(body.count(last, 0), 1)
     })
 
-    test('a changed expression reference is respected in a new context', () => {
+    test('an expression reference cannot be changed', () => {
         const rule = expression<string>()
         rule.ref = productT(wordIs<string>('a'), value => value)
         const parser = choice(rule)
@@ -384,17 +384,8 @@ describe('Packrat state and semantic compatibility invariants', () => {
 
         assert.strictEqual(parseUnderTest(parser, first), Result.Parsed)
         assertProductionEffects(first, [{ kind: 'value', symbol: 'a' }])
-        rule.ref = productT(wordIs<string>('b'), value => value)
 
-        const second = new Context<string>('b')
-        const oldSource = new Context<string>('a')
-
-        assert.strictEqual(parseUnderTest(parser, second), Result.Parsed)
-        assert.strictEqual(parseUnderTest(parser, oldSource), Result.NotParsed)
-        assertProductionEffects(second, [{ kind: 'value', symbol: 'b' }])
-        assert.strictEqual(second.productionManager.result, 'b')
-        assert.strictEqual(oldSource.sourceManager.pos, 0)
-        assertProductionEffects(oldSource, [])
+        assert.throws(() => rule.ref = productT(wordIs<string>('b'), value => value), /Expression reference cannot be replaced!/)
     })
 
     test('a shared reduction uses the current preceding stack, not the first alternative snapshot', () => {
