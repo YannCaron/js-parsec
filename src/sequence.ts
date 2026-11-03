@@ -14,12 +14,16 @@ class Sequence<T> extends ParsemComposite<T> {
 
         let res = Result.Continue
 
-        for (const child of this.children) {
+        for (const [index, child] of this.children.entries()) {
 
             const childRes = child.parse(ctx)
 
             if (childRes === Result.NotParsed) {
                 return Result.NotParsed
+            } else if (childRes === Result.Seed) {
+                const remaining = this.children.slice(index + 1)
+                const continuation = sequence(...remaining)
+                ctx.leftRecursionHandler._continuation.push(continuation)
             } else if (childRes === Result.Parsed) {
                 res = Result.Parsed
             }

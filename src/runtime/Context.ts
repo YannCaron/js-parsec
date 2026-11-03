@@ -6,6 +6,7 @@ import ProductionEffectJournal from './manager/ProductionEffectJournal.ts'
 import ProductionManager from './manager/ProductionManager.ts'
 import MemoizerHandler from './handler/MemoizerHandler.ts'
 import BacktrackingHandler from './handler/BacktrackingHandler.ts'
+import LeftRecursionHandler from './handler/LeftRecursionHandler.ts'
 
 export default class Context<T> {
 
@@ -17,6 +18,7 @@ export default class Context<T> {
     private readonly _productionManager: ProductionManager<T>
     private readonly _backtrackingHandler: BacktrackingHandler<T>
     private readonly _memoizerHandler: MemoizerHandler<T>
+    private readonly _leftRecursionHandler: LeftRecursionHandler<T>
 
     get sourceManager(): SourceManager {
         return this._sourceManager
@@ -50,6 +52,10 @@ export default class Context<T> {
         return this._backtrackingHandler
     }
 
+    get leftRecursionHandler(): LeftRecursionHandler<T> {
+        return this._leftRecursionHandler
+    }
+
     constructor(src: string) {
         this._sourceManager = new SourceManager(src)
         this._tokenManager = new TokenManager()
@@ -59,6 +65,7 @@ export default class Context<T> {
         this._productionManager = new ProductionManager<T>(this._sourceManager)
         this._backtrackingHandler = new BacktrackingHandler<T>(this)
         this._memoizerHandler = new MemoizerHandler<T>(this)
+        this._leftRecursionHandler = new LeftRecursionHandler<T>(this)
     }
 
     next() {

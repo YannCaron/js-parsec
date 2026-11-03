@@ -38,8 +38,38 @@ class Expression<T> extends Parsem<T> {
 
     parse(ctx: Context<T>): Result {
 
-        const res = this.ref.parse(ctx)
-        return res
+        const pos = ctx.sourceManager.pos
+        if (ctx.leftRecursionHandler._recurse.get(this) === pos) {
+            console.log('recursion detected');
+            return Result.Seed
+        }
+
+        ctx.leftRecursionHandler._recurse.set(this, pos)
+
+        try {
+
+            let res = this.ref.parse(ctx)
+
+            if (res === Result.Parsed) {
+                if (!ctx.leftRecursionHandler._continuation.isEmpty) {
+
+                    const continuation = ctx.leftRecursionHandler._continuation.pop()
+                    console.log(continuation);
+                    while (res === Result.Parsed) {
+                        console.log(ctx.sourceManager);
+                        res = continuation?.parse(ctx) || Result.NotParsed
+                        console.log('res', res);
+                    }
+
+                    return Result.Parsed
+                }
+            }
+
+            return res
+
+        } finally {
+            ctx.leftRecursionHandler._recurse.delete(this)
+        }
 
     }
 
