@@ -48,10 +48,25 @@ export default class ProductionManager<T> {
         this._stack.push(production)
     }
 
-    consume(): T {
-        if (this._stack.isEmpty)
-            throw new Error(`Production stack overflow!`)
+    /**
+     * Validate the number of operands before mutating the production stack.
+     * A reducer can intentionally consume values emitted before its own rule,
+     * so the guard checks the current stack, not just the rule-local delta.
+     */
+    assertCanConsume(required: number): void {
+        if (!Number.isInteger(required) || required < 0)
+            throw new RangeError('Aggregation arity must be a non-negative integer.')
 
+        const available = this.pos
+        if (required > available)
+            throw new Error(
+                `Production stack underflow: required=${required}, available=${available}. ` +
+                'Check the semantic action arity and whether the matched expressions produce values.'
+            )
+    }
+
+    consume(): T {
+        this.assertCanConsume(1)
         return this._stack.pop() as T
     }
 
@@ -76,7 +91,9 @@ export default class ProductionManager<T> {
         if (!Number.isInteger(count) || count < 0)
             throw new RangeError('Aggregation arity must be a non-negative integer.')
 
-        while (count > 0 && !this._stack.isEmpty) {
+        this.assertCanConsume(count)
+
+        while (count > 0) {
             const value = this.consume()
             args.unshift(value)
             count--
