@@ -67,6 +67,10 @@ export class PushAggregatorProductionEffect<T> extends ProductionEffect<T> {
     }
 
     apply(ctx: Context<T>): void {
+        // Fail before consuming any operand: a failed reduction must not leave
+        // the production stack partially popped.
+        ctx.productionManager.assertCanConsume(this._arity)
+
         const args = new Array<T>()
         let count = this._arity
 
