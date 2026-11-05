@@ -83,8 +83,8 @@ describe('production stack underflow diagnostics and atomicity', () => {
         ['a,b,a', ['a', 'b', 'a']],
     ] as const) {
         test(`a left fold with optional produced separators preserves all params: ${source}`, () => {
-            const item = choice(productT(wordIs<string>('a')), productT(wordIs<string>('b')))
-            const comma = productT(wordIs<string>(','))
+            const item = choice(productT<unknown>(wordIs<unknown>('a')), productT<unknown>(wordIs<unknown>('b')))
+            const comma = productT<unknown>(wordIs<unknown>(','))
             // Rest arity includes the group-local values and one preceding
             // accumulator (the leading fixed argument). Separator is optional.
             const step = productNT(
@@ -92,7 +92,7 @@ describe('production stack underflow diagnostics and atomicity', () => {
                 (acc: unknown, ...tail: unknown[]) => (acc as string[]).concat(tail.at(-1) as string)
             )
             const params = sequence(
-                productNT(item, (first: string) => [first]),
+                productNT(item, (first: unknown) => [first]),
                 optional(repeat(step))
             )
             const ctx = new Context<unknown>(source)
